@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dr. Malaquias — Projeto Óculos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#060b14;--bg2:#0b1220;--bg3:#101928;--bg4:#162030;
+  --c:#00D4FF;--c2:#0099CC;--g:#00FF94;--y:#FFD60A;--r:#FF4D6D;--p:#7B5EA7;
+  --txt:#E8F4FD;--txt2:#7EACC4;--txt3:#3D6478;
+  --brd:rgba(0,212,255,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.3);border-radius:2px;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;height:62px;background:rgba(6,11,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;}
+.nav-brand{display:flex;align-items:center;gap:.75rem;}
+.nav-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--c),var(--c2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:800;color:#000;box-shadow:0 0 18px rgba(0,212,255,.4);}
+.nav-title{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.04em;}
+.nav-title small{display:block;font-size:.55rem;font-weight:500;color:var(--txt2);letter-spacing:.15em;text-transform:uppercase;margin-top:1px;}
+.nav-tabs{display:flex;gap:.25rem;}
+.nav-tab{padding:.45rem 1.1rem;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--txt2);transition:all .2s;letter-spacing:.03em;}
+.nav-tab:hover{color:var(--txt);background:rgba(0,212,255,.06);}
+.nav-tab.active{color:var(--c);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);}
+.nav-right{display:flex;align-items:center;gap:.6rem;}
+.nav-ponto{font-family:'Space Grotesk',sans-serif;font-size:.65rem;font-weight:700;color:var(--c);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);padding:.25rem .7rem;border-radius:50px;letter-spacing:.1em;}
+.btn-novo{background:linear-gradient(135deg,var(--c),var(--c2));border:none;color:#000;font-size:.75rem;font-weight:700;padding:.45rem 1.1rem;border-radius:8px;cursor:pointer;font-family:'Space Grotesk',sans-serif;letter-spacing:.06em;transition:all .2s;}
+.btn-novo:hover{opacity:.85;box-shadow:0 0 20px rgba(0,212,255,.4);}
+
+/* VIEWS */
+.view{display:none;padding:1.5rem 2rem 3rem;}
+.view.active{display:block;}
+
+/* PAINEL */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--bg2);border:1px solid var(--brd);border-radius:16px;padding:1.3rem 1.4rem;position:relative;overflow:hidden;transition:transform .2s;}
+.kpi:hover{transform:translateY(-2px);}
+.kpi::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--kc,rgba(0,212,255,.06)),transparent);pointer-events:none;}
+.kpi-icon{font-size:1.6rem;margin-bottom:.5rem;}
+.kpi-val{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--kc2,var(--c)),var(--kc3,var(--c2)));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.kpi-label{font-size:.7rem;color:var(--txt2);margin-top:.3rem;letter-spacing:.06em;text-transform:uppercase;}
+.kpi-delta{font-size:.68rem;font-weight:600;margin-top:.35rem;}
+.kpi-delta.up{color:var(--g);}
+.kpi-delta.dn{color:var(--r);}
+
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:var(--txt);}
+.section-title::before{content:'';width:3px;height:1rem;background:var(--c);border-radius:2px;display:block;}
+
+/* 20 PONTOS GRID */
+.pontos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.75rem;}
+@media(max-width:900px){.pontos-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:600px){.pontos-grid{grid-template-columns:repeat(3,1fr);}}
+.ponto-card{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:1rem;text-align:center;cursor:pointer;transition:all .25s;position:relative;}
+.ponto-card:hover{border-color:rgba(0,212,255,.5);transform:translateY(-3px);}
+.ponto-card.active-p{border-color:var(--c);background:rgba(0,212,255,.06);}
+.ponto-num{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:800;color:var(--c);}
+.ponto-name{font-size:.6rem;color:var(--txt2);margin-top:.2rem;letter-spacing:.05em;}
+.ponto-count{font-size:.72rem;font-weight:700;color:var(--txt);margin-top:.35rem;}
+.ponto-status{position:absolute;top:.5rem;right:.5rem;width:7px;height:7px;border-radius:50%;}
+.ponto-status.ok{background:var(--g);box-shadow:0 0 6px var(--g);}
+.ponto-status.med{background:var(--y);box-shadow:0 0 6px var(--y);}
+.ponto-status.zero{background:var(--txt3);}
+
+/* TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--brd);border-radius:16px;overflow:hidden;}
+.table-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;border-bottom:1px solid var(--brd);}
+.table-head h3{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:700;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2);padding:.8rem 1.4rem;text-align:left;border-bottom:1px solid var(--brd);}
+.tbl td{font-size:.82rem;padding:.75rem 1.4rem;border-bottom:1px solid rgba(0,212,255,.05);color:var(--txt);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(0,212,255,.03);}
+.badge{font-size:.6rem;font-weight:700;padding:.18rem .55rem;border-radius:50px;letter-spacing:.06em;}
+.badge-triagem{background:rgba(0,212,255,.12);color:var(--c);border:1px solid rgba(0,212,255,.3);}
+.badge-consulta{background:rgba(123,94,167,.15);color:#9B7DD4;border:1px solid rgba(123,94,167,.3);}
+.badge-exame{background:rgba(255,214,10,.1);color:var(--y);border:1px solid rgba(255,214,10,.25);}
+.badge-completo{background:rgba(0,255,148,.1);color:var(--g);border:1px solid rgba(0,255,148,.25);}
+.btn-ver{font-size:.68rem;font-weight:600;color:var(--c);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);padding:.22rem .65rem;border-radius:6px;cursor:pointer;transition:all .2s;}
+.btn-ver:hover{background:rgba(0,212,255,.18);}
+
+/* CADASTRO STEPPER */
+.stepper-wrap{max-width:780px;margin:0 auto;}
+.stepper{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2.5rem;}
+.step{display:flex;align-items:center;gap:.5rem;}
+.step-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:800;border:2px solid var(--txt3);color:var(--txt3);transition:all .3s;position:relative;}
+.step-circle.done{background:var(--g);border-color:var(--g);color:#000;}
+.step-circle.active{background:var(--c);border-color:var(--c);color:#000;box-shadow:0 0 18px rgba(0,212,255,.45);}
+.step-label{font-size:.68rem;font-weight:600;color:var(--txt3);transition:color .3s;white-space:nowrap;}
+.step-label.active{color:var(--c);}
+.step-label.done{color:var(--g);}
+.step-line{width:60px;height:2px;background:var(--txt3);margin:0 .5rem;transition:background .3s;flex-shrink:0;}
+.step-line.done{background:var(--g);}
+@media(max-width:600px){.step-line{width:30px;}.step-label{display:none;}}
+
+.form-panel{background:var(--bg2);border:1px solid var(--brd);border-radius:20px;padding:2rem;display:none;}
+.form-panel.active{display:block;}
+.form-title{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:.6rem;}
+.form-title .icon{width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;}
+.form-grid.full{grid-template-columns:1fr;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:.4rem;}
+.form-group.full{grid-column:span 2;}
+@media(max-width:600px){.form-group.full{grid-column:span 1;}}
+label{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--c);}
+input,select,textarea{background:var(--bg3);border:1px solid rgba(0,212,255,.2);color:var(--txt);border-radius:10px;padding:.65rem .9rem;font-size:.88rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;resize:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--c);box-shadow:0 0 12px rgba(0,212,255,.15);}
+select option{background:var(--bg3);}
+
+.ponto-selector{display:grid;grid-template-columns:repeat(10,1fr);gap:.4rem;margin-bottom:1.5rem;}
+@media(max-width:700px){.ponto-selector{grid-template-columns:repeat(5,1fr);}}
+.ps-btn{padding:.5rem;border-radius:8px;background:var(--bg3);border:1px solid rgba(0,212,255,.15);color:var(--txt2);font-size:.75rem;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;font-family:'Space Grotesk',sans-serif;}
+.ps-btn:hover{border-color:rgba(0,212,255,.4);color:var(--txt);}
+.ps-btn.sel{background:rgba(0,212,255,.12);border-color:var(--c);color:var(--c);box-shadow:0 0 10px rgba(0,212,255,.2);}
+
+.oculos-options{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.5rem;}
+.oculos-opt{background:var(--bg3);border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:1rem;text-align:center;cursor:pointer;transition:all .2s;}
+.oculos-opt:hover{border-color:rgba(0,212,255,.4);}
+.oculos-opt.sel{border-color:var(--c);background:rgba(0,212,255,.1);box-shadow:0 0 14px rgba(0,212,255,.15);}
+.oculos-opt .oc-icon{font-size:1.8rem;margin-bottom:.4rem;}
+.oculos-opt .oc-name{font-size:.78rem;font-weight:600;color:var(--txt);}
+
+.form-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;}
+.btn-back{background:none;border:1px solid var(--brd);color:var(--txt2);padding:.65rem 1.5rem;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s;}
+.btn-back:hover{border-color:rgba(0,212,255,.3);color:var(--txt);}
+.btn-next{background:linear-gradient(135deg,var(--c),var(--c2));border:none;color:#000;padding:.65rem 1.75rem;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:'Space Grotesk',sans-serif;letter-spacing:.05em;transition:all .2s;}
+.btn-next:hover{box-shadow:0 0 20px rgba(0,212,255,.4);transform:translateY(-1px);}
+.btn-save{background:linear-gradient(135deg,var(--g),#00CC76);border:none;color:#000;padding:.65rem 1.75rem;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:'Space Grotesk',sans-serif;letter-spacing:.05em;transition:all .2s;}
+.btn-save:hover{box-shadow:0 0 20px rgba(0,255,148,.35);}
+
+/* SUCESSO */
+.success-box{text-align:center;padding:3rem 2rem;background:var(--bg2);border:1px solid rgba(0,255,148,.3);border-radius:20px;display:none;}
+.success-box.show{display:block;}
+.success-icon{font-size:4rem;margin-bottom:1rem;}
+.success-box h2{font-family:'Space Grotesk',sans-serif;font-size:1.6rem;font-weight:800;color:var(--g);margin-bottom:.5rem;}
+.success-box p{color:var(--txt2);font-size:.92rem;margin-bottom:1.5rem;}
+
+/* RELATORIO */
+.relatorio-header{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;}
+.rel-card{background:var(--bg2);border:1px solid var(--brd);border-radius:16px;padding:1.4rem;}
+.rel-card h3{font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2);margin-bottom:.6rem;}
+.rel-val{font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:800;line-height:1;}
+.rel-period{font-size:.7rem;color:var(--txt2);margin-top:.35rem;}
+
+.pontos-table{width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:16px;overflow:hidden;}
+.rel-tbl{width:100%;border-collapse:collapse;}
+.rel-tbl th{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2);padding:.85rem 1.2rem;text-align:left;border-bottom:1px solid var(--brd);background:var(--bg3);}
+.rel-tbl td{font-size:.82rem;padding:.75rem 1.2rem;border-bottom:1px solid rgba(0,212,255,.05);color:var(--txt);}
+.rel-tbl tr:last-child td{border-bottom:none;}
+.bar{height:6px;border-radius:3px;background:rgba(0,212,255,.15);overflow:hidden;min-width:80px;}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--c),var(--c2));transition:width .6s;}
+
+.btn-export{background:var(--bg3);border:1px solid var(--brd);color:var(--txt);padding:.6rem 1.3rem;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:.5rem;}
+.btn-export:hover{border-color:rgba(0,212,255,.4);color:var(--c);}
+
+/* SCAN LINES */
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.006) 2px,rgba(0,212,255,.006) 4px);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">M</div>
+    <div class="nav-title">Dr. Malaquias <small>Projeto Óculos</small></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('painel',this)">📊 Painel</button>
+    <button class="nav-tab" onclick="showView('cadastro',this)">➕ Novo Cadastro</button>
+    <button class="nav-tab" onclick="showView('relatorio',this)">📋 Relatório Semanal</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-ponto" id="pontoAtivo">PONTO 01</div>
+    <button class="btn-novo" onclick="showView('cadastro',null);setPonto(1)">+ Cadastrar</button>
+  </div>
+</nav>
+
+<!-- ═══ PAINEL ═══ -->
+<div class="view active" id="view-painel">
+
+  <div class="kpi-grid">
+    <div class="kpi" style="--kc:rgba(0,212,255,.06);--kc2:#00D4FF;--kc3:#0099CC;">
+      <div class="kpi-icon">👤</div>
+      <div class="kpi-val" id="kpi-total">0</div>
+      <div class="kpi-label">Total de Pacientes</div>
+      <div class="kpi-delta up" id="kpi-total-d">↑ Esta semana</div>
+    </div>
+    <div class="kpi" style="--kc:rgba(0,255,148,.06);--kc2:#00FF94;--kc3:#00CC76;">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-val" id="kpi-completos">0</div>
+      <div class="kpi-label">Atendimentos Completos</div>
+      <div class="kpi-delta up" id="kpi-comp-d">↑ Concluídos</div>
+    </div>
+    <div class="kpi" style="--kc:rgba(255,214,10,.06);--kc2:#FFD60A;--kc3:#FFA500;">
+      <div class="kpi-icon">🔍</div>
+      <div class="kpi-val" id="kpi-exames">0</div>
+      <div class="kpi-label">Exames Realizados</div>
+      <div class="kpi-delta up">↑ Processados</div>
+    </div>
+    <div class="kpi" style="--kc:rgba(255,77,109,.06);--kc2:#FF4D6D;--kc3:#CC3355;">
+      <div class="kpi-icon">⏳</div>
+      <div class="kpi-val" id="kpi-pend">0</div>
+      <div class="kpi-label">Pendentes</div>
+      <div class="kpi-delta dn">↓ Em andamento</div>
+    </div>
+  </div>
+
+  <div class="section-title">20 Pontos de Cadastro</div>
+  <div class="pontos-grid" id="pontosGrid"></div>
+
+  <div class="section-title">Registros Recentes</div>
+  <div class="table-wrap">
+    <div class="table-head">
+      <h3>Últimos Atendimentos</h3>
+      <button class="btn-ver" onclick="renderTabela()">↻ Atualizar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Paciente</th><th>Ponto</th><th>Triagem</th><th>Consulta</th><th>Exame</th><th>Óculos</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="tabelaBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ CADASTRO ═══ -->
+<div class="view" id="view-cadastro">
+<div class="stepper-wrap">
+
+  <div style="margin-bottom:1.5rem;">
+    <div class="section-title">Selecionar Ponto de Cadastro</div>
+    <div class="ponto-selector" id="pontoSelector"></div>
+  </div>
+
+  <div class="stepper" id="stepper">
+    <div class="step">
+      <div class="step-circle active" id="sc1">1</div>
+      <div class="step-label active" id="sl1">Triagem</div>
+    </div>
+    <div class="step-line" id="line1"></div>
+    <div class="step">
+      <div class="step-circle" id="sc2">2</div>
+      <div class="step-label" id="sl2">Consulta</div>
+    </div>
+    <div class="step-line" id="line2"></div>
+    <div class="step">
+      <div class="step-circle" id="sc3">3</div>
+      <div class="step-label" id="sl3">Exame</div>
+    </div>
+    <div class="step-line" id="line3"></div>
+    <div class="step">
+      <div class="step-circle" id="sc4">4</div>
+      <div class="step-label" id="sl4">Óculos</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: TRIAGEM -->
+  <div class="form-panel active" id="panel1">
+    <div class="form-title"><div class="icon">🩺</div> Triagem</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome completo *</label><input id="f-nome" type="text" placeholder="Nome do paciente"/></div>
+      <div class="form-group"><label>Data de nascimento</label><input id="f-nasc" type="date"/></div>
+      <div class="form-group"><label>CPF</label><input id="f-cpf" type="text" placeholder="000.000.000-00"/></div>
+      <div class="form-group"><label>Telefone</label><input id="f-tel" type="tel" placeholder="(00) 00000-0000"/></div>
+      <div class="form-group"><label>Queixa principal *</label><input id="f-queixa" type="text" placeholder="Descreva a queixa principal"/></div>
+      <div class="form-group"><label>Pressão arterial</label><input id="f-pressao" type="text" placeholder="120/80 mmHg"/></div>
+      <div class="form-group"><label>Temperatura (°C)</label><input id="f-temp" type="text" placeholder="36.5"/></div>
+      <div class="form-group"><label>Peso (kg)</label><input id="f-peso" type="text" placeholder="70"/></div>
+      <div class="form-group full"><label>Observações da triagem</label><textarea id="f-obs-triagem" rows="2" placeholder="Observações adicionais..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-next" onclick="nextStep(2)">Avançar para Consulta →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: CONSULTA -->
+  <div class="form-panel" id="panel2">
+    <div class="form-title"><div class="icon">👨‍⚕️</div> Consulta</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Médico responsável</label><input id="f-medico" type="text" placeholder="Dr. Malaquias"/></div>
+      <div class="form-group"><label>Data da consulta</label><input id="f-data-consulta" type="date"/></div>
+      <div class="form-group full"><label>Anamnese</label><textarea id="f-anamnese" rows="3" placeholder="Histórico do paciente, queixas, etc."></textarea></div>
+      <div class="form-group full"><label>Diagnóstico preliminar</label><textarea id="f-diagnostico" rows="2" placeholder="CID, hipóteses diagnósticas..."></textarea></div>
+      <div class="form-group full"><label>Conduta / Observações</label><textarea id="f-conduta" rows="2" placeholder="Conduta médica indicada..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-back" onclick="nextStep(1)">← Voltar</button>
+      <button class="btn-next" onclick="nextStep(3)">Avançar para Exame →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: EXAME -->
+  <div class="form-panel" id="panel3">
+    <div class="form-title"><div class="icon">🔬</div> Exame</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Tipo de exame</label>
+        <select id="f-tipo-exame">
+          <option>Refração</option><option>Biomicroscopia</option><option>Tonometria</option>
+          <option>Fundo de Olho</option><option>Topografia</option><option>OCT</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Data do exame</label><input id="f-data-exame" type="date"/></div>
+      <div class="form-group"><label>Olho Direito (OD) — Esf.</label><input id="f-od-esf" type="text" placeholder="-2.50"/></div>
+      <div class="form-group"><label>Olho Direito (OD) — Cil.</label><input id="f-od-cil" type="text" placeholder="-1.00"/></div>
+      <div class="form-group"><label>Olho Esquerdo (OE) — Esf.</label><input id="f-oe-esf" type="text" placeholder="-2.25"/></div>
+      <div class="form-group"><label>Olho Esquerdo (OE) — Cil.</label><input id="f-oe-cil" type="text" placeholder="-0.75"/></div>
+      <div class="form-group full"><label>Resultado / Laudo</label><textarea id="f-laudo" rows="3" placeholder="Descreva o resultado do exame..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-back" onclick="nextStep(2)">← Voltar</button>
+      <button class="btn-next" onclick="nextStep(4)">Avançar para Óculos →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: ÓCULOS -->
+  <div class="form-panel" id="panel4">
+    <div class="form-title"><div class="icon">👓</div> Escolha do Óculos</div>
+    <div style="margin-bottom:1.2rem;">
+      <label style="display:block;margin-bottom:.6rem;">Tipo de lente</label>
+      <div class="oculos-options">
+        <div class="oculos-opt" onclick="selOculos(this,'lente','Monofocal')"><div class="oc-icon">🔵</div><div class="oc-name">Monofocal</div></div>
+        <div class="oculos-opt" onclick="selOculos(this,'lente','Bifocal')"><div class="oc-icon">🔷</div><div class="oc-name">Bifocal</div></div>
+        <div class="oculos-opt" onclick="selOculos(this,'lente','Progressiva')"><div class="oc-icon">💎</div><div class="oc-name">Progressiva</div></div>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Armação escolhida</label><input id="f-armacao" type="text" placeholder="Modelo / código da armação"/></div>
+      <div class="form-group"><label>Material da lente</label>
+        <select id="f-material">
+          <option>Resina 1.50</option><option>Resina 1.56</option><option>Policarbonato</option>
+          <option>Trivex</option><option>Alto Índice 1.67</option><option>Alto Índice 1.74</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Filtro / Tratamento</label>
+        <select id="f-filtro">
+          <option>Antirreflexo</option><option>Blue Light</option><option>Fotossensível</option>
+          <option>Polarizado</option><option>Sem tratamento</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Valor estimado (R$)</label><input id="f-valor" type="text" placeholder="0,00"/></div>
+      <div class="form-group full"><label>Observações finais</label><textarea id="f-obs-oculos" rows="2" placeholder="Orientações ao paciente, prazo de entrega..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-back" onclick="nextStep(3)">← Voltar</button>
+      <button class="btn-save" onclick="salvarCadastro()">✅ Salvar Cadastro Completo</button>
+    </div>
+  </div>
+
+  <div class="success-box" id="successBox">
+    <div class="success-icon">🎉</div>
+    <h2>Cadastro Salvo!</h2>
+    <p>O atendimento completo foi registrado com sucesso no sistema.</p>
+    <button class="btn-next" onclick="novoCadastro()">+ Novo Cadastro</button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ RELATÓRIO ═══ -->
+<div class="view" id="view-relatorio">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+    <div>
+      <div class="section-title" style="margin-bottom:0;">Relatório Semanal — Projeto Óculos</div>
+      <div style="font-size:.78rem;color:var(--txt2);margin-top:.3rem;" id="rel-periodo">Semana atual</div>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <button class="btn-export" onclick="exportarRelatorio()">📥 Exportar TXT</button>
+    </div>
+  </div>
+
+  <div class="relatorio-header">
+    <div class="rel-card">
+      <h3>Total da Semana</h3>
+      <div class="rel-val" style="background:linear-gradient(135deg,var(--c),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="rel-total">0</div>
+      <div class="rel-period">pacientes atendidos</div>
+    </div>
+    <div class="rel-card">
+      <h3>Atendimentos Completos</h3>
+      <div class="rel-val" style="background:linear-gradient(135deg,var(--g),#00CC76);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="rel-comp">0</div>
+      <div class="rel-period">fluxo completo concluído</div>
+    </div>
+    <div class="rel-card">
+      <h3>Pontos Ativos</h3>
+      <div class="rel-val" style="background:linear-gradient(135deg,var(--y),#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="rel-pontos">0</div>
+      <div class="rel-period">de 20 pontos com registros</div>
+    </div>
+  </div>
+
+  <div class="section-title">Desempenho por Ponto</div>
+  <div class="pontos-table">
+    <table class="rel-tbl">
+      <thead><tr>
+        <th>Ponto</th><th>Total</th><th>Triagem</th><th>Consulta</th><th>Exame</th><th>Completos</th><th>Progresso</th>
+      </tr></thead>
+      <tbody id="relTabelaBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+var PONTOS_NOMES=['Unidade Centro','Unidade Norte','Unidade Sul','Unidade Leste','Unidade Oeste','Clínica A','Clínica B','Clínica C','Hospital 1','Hospital 2','UBS 1','UBS 2','UBS 3','UBS 4','UBS 5','Posto 1','Posto 2','Posto 3','Posto 4','Posto 5'];
+var currentStep=1, currentPonto=1, currentLente='';
+var STORAGE_KEY='malaquias_oculos_v1';
+
+function getData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
+function saveData(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}
+
+/* NAV */
+function showView(v,btn){
+  document.querySelectorAll('.view').forEach(function(x){x.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  if(v==='painel'){renderPainel();}
+  if(v==='relatorio'){renderRelatorio();}
+}
+
+/* PONTO SELECTOR */
+function setPonto(n){
+  currentPonto=n;
+  document.getElementById('pontoAtivo').textContent='PONTO '+String(n).padStart(2,'0');
+  document.querySelectorAll('.ps-btn').forEach(function(b,i){
+    b.classList.toggle('sel',i+1===n);
+  });
+}
+function buildPontoSelector(){
+  var el=document.getElementById('pontoSelector');
+  el.innerHTML='';
+  for(var i=1;i<=20;i++){
+    (function(n){
+      var b=document.createElement('button');
+      b.className='ps-btn'+(n===1?' sel':'');
+      b.textContent=String(n).padStart(2,'0');
+      b.onclick=function(){setPonto(n);};
+      el.appendChild(b);
+    })(i);
+  }
+}
+
+/* STEPPER */
+function nextStep(s){
+  if(s===2&&!document.getElementById('f-nome').value.trim()){alert('Informe o nome do paciente.');return;}
+  for(var i=1;i<=4;i++){
+    document.getElementById('panel'+i).classList.toggle('active',i===s);
+    var sc=document.getElementById('sc'+i);
+    var sl=document.getElementById('sl'+i);
+    sc.classList.remove('active','done');
+    sl.classList.remove('active','done');
+    if(i<s){sc.classList.add('done');sc.textContent='✓';sl.classList.add('done');}
+    else if(i===s){sc.classList.add('active');sc.textContent=i;sl.classList.add('active');}
+    else{sc.textContent=i;}
+    if(i<4){var ln=document.getElementById('line'+i);if(ln)ln.classList.toggle('done',i<s);}
+  }
+  currentStep=s;
+}
+
+function selOculos(el,type,val){
+  el.closest('.oculos-options').querySelectorAll('.oculos-opt').forEach(function(o){o.classList.remove('sel');});
+  el.classList.add('sel');
+  currentLente=val;
+}
+
+/* SALVAR */
+function salvarCadastro(){
+  var nome=document.getElementById('f-nome').value.trim();
+  if(!nome){alert('Nome do paciente é obrigatório.');nextStep(1);return;}
+  var reg={
+    id:Date.now()+Math.random(),
+    ponto:currentPonto,
+    pontoNome:PONTOS_NOMES[currentPonto-1],
+    data:new Date().toISOString(),
+    paciente:{nome:nome,nasc:document.getElementById('f-nasc').value,cpf:document.getElementById('f-cpf').value,tel:document.getElementById('f-tel').value},
+    triagem:{queixa:document.getElementById('f-queixa').value,pressao:document.getElementById('f-pressao').value,temp:document.getElementById('f-temp').value,peso:document.getElementById('f-peso').value,obs:document.getElementById('f-obs-triagem').value},
+    consulta:{medico:document.getElementById('f-medico').value,data:document.getElementById('f-data-consulta').value,anamnese:document.getElementById('f-anamnese').value,diagnostico:document.getElementById('f-diagnostico').value,conduta:document.getElementById('f-conduta').value},
+    exame:{tipo:document.getElementById('f-tipo-exame').value,data:document.getElementById('f-data-exame').value,odEsf:document.getElementById('f-od-esf').value,odCil:document.getElementById('f-od-cil').value,oeEsf:document.getElementById('f-oe-esf').value,oeCil:document.getElementById('f-oe-cil').value,laudo:document.getElementById('f-laudo').value},
+    oculos:{lente:currentLente,armacao:document.getElementById('f-armacao').value,material:document.getElementById('f-material').value,filtro:document.getElementById('f-filtro').value,valor:document.getElementById('f-valor').value,obs:document.getElementById('f-obs-oculos').value},
+    status:'completo'
+  };
+  var data=getData();
+  data.unshift(reg);
+  saveData(data);
+  document.querySelectorAll('.form-panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('successBox').classList.add('show');
+}
+
+function novoCadastro(){
+  document.getElementById('successBox').classList.remove('show');
+  document.getElementById('f-nome').value='';
+  document.getElementById('f-cpf').value='';
+  document.getElementById('f-tel').value='';
+  document.getElementById('f-nasc').value='';
+  document.getElementById('f-queixa').value='';
+  document.getElementById('f-pressao').value='';
+  document.getElementById('f-temp').value='';
+  document.getElementById('f-peso').value='';
+  document.getElementById('f-obs-triagem').value='';
+  document.getElementById('f-medico').value='';
+  document.getElementById('f-anamnese').value='';
+  document.getElementById('f-diagnostico').value='';
+  document.getElementById('f-conduta').value='';
+  document.getElementById('f-laudo').value='';
+  document.getElementById('f-armacao').value='';
+  document.getElementById('f-valor').value='';
+  document.getElementById('f-obs-oculos').value='';
+  currentLente='';
+  nextStep(1);
+}
+
+/* PAINEL */
+function renderPainel(){
+  var data=getData();
+  var total=data.length;
+  var comp=data.filter(function(r){return r.status==='completo';}).length;
+  var exames=data.filter(function(r){return r.exame&&r.exame.tipo;}).length;
+  var pend=total-comp;
+  animNum('kpi-total',total);
+  animNum('kpi-completos',comp);
+  animNum('kpi-exames',exames);
+  animNum('kpi-pend',pend);
+
+  var grid=document.getElementById('pontosGrid');
+  grid.innerHTML='';
+  for(var i=1;i<=20;i++){
+    var cnt=data.filter(function(r){return r.ponto===i;}).length;
+    var status=cnt===0?'zero':cnt<3?'med':'ok';
+    var card=document.createElement('div');
+    card.className='ponto-card';
+    card.innerHTML='<div class="ponto-status '+status+'"></div><div class="ponto-num">'+String(i).padStart(2,'0')+'</div><div class="ponto-name">'+PONTOS_NOMES[i-1]+'</div><div class="ponto-count">'+cnt+' paciente'+(cnt!==1?'s':'')+'</div>';
+    (function(n){card.onclick=function(){setPonto(n);showView('cadastro',null);};})(i);
+    grid.appendChild(card);
+  }
+  renderTabela();
+}
+
+function renderTabela(){
+  var data=getData();
+  var tbody=document.getElementById('tabelaBody');
+  if(data.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--txt2);padding:2rem;">Nenhum registro encontrado. Faça o primeiro cadastro!</td></tr>';return;}
+  tbody.innerHTML=data.slice(0,15).map(function(r){
+    return '<tr><td><strong>'+r.paciente.nome+'</strong><br/><span style="font-size:.7rem;color:var(--txt2);">'+r.pontoNome+'</span></td>'+
+    '<td style="font-family:\'Space Grotesk\',sans-serif;font-weight:700;color:var(--c);">'+String(r.ponto).padStart(2,'0')+'</td>'+
+    '<td>'+check(r.triagem&&r.triagem.queixa)+'</td>'+
+    '<td>'+check(r.consulta&&r.consulta.anamnese)+'</td>'+
+    '<td>'+check(r.exame&&r.exame.laudo)+'</td>'+
+    '<td>'+check(r.oculos&&r.oculos.armacao)+'</td>'+
+    '<td><span class="badge badge-'+r.status+'">'+r.status.toUpperCase()+'</span></td>'+
+    '<td><button class="btn-ver">Ver</button></td></tr>';
+  }).join('');
+}
+
+function check(v){return v?'<span style="color:var(--g);">✓</span>':'<span style="color:var(--txt3);">—</span>';}
+
+function animNum(id,target){
+  var el=document.getElementById(id);if(!el)return;
+  var start=0,dur=600,st=Date.now();
+  (function tick(){var p=Math.min((Date.now()-st)/dur,1);el.textContent=Math.round(start+(target-start)*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick);})();
+}
+
+/* RELATORIO */
+function renderRelatorio(){
+  var data=getData();
+  var now=new Date();
+  var weekAgo=new Date(now-7*24*60*60*1000);
+  var semana=data.filter(function(r){return new Date(r.data)>=weekAgo;});
+
+  document.getElementById('rel-total').textContent=semana.length;
+  document.getElementById('rel-comp').textContent=semana.filter(function(r){return r.status==='completo';}).length;
+  var pontosAtivos=new Set(semana.map(function(r){return r.ponto;})).size;
+  document.getElementById('rel-pontos').textContent=pontosAtivos;
+
+  var d1=weekAgo.toLocaleDateString('pt-BR');
+  var d2=now.toLocaleDateString('pt-BR');
+  document.getElementById('rel-periodo').textContent=d1+' a '+d2;
+
+  var tbody=document.getElementById('relTabelaBody');
+  var rows='';
+  var maxTotal=0;
+  var pontoData=[];
+  for(var i=1;i<=20;i++){
+    var regs=data.filter(function(r){return r.ponto===i;});
+    var sem=semana.filter(function(r){return r.ponto===i;});
+    pontoData.push({n:i,nome:PONTOS_NOMES[i-1],total:regs.length,sem:sem.length,
+      triagem:regs.filter(function(r){return r.triagem&&r.triagem.queixa;}).length,
+      consulta:regs.filter(function(r){return r.consulta&&r.consulta.anamnese;}).length,
+      exame:regs.filter(function(r){return r.exame&&r.exame.laudo;}).length,
+      comp:regs.filter(function(r){return r.status==='completo';}).length
+    });
+    if(regs.length>maxTotal)maxTotal=regs.length;
+  }
+  pontoData.sort(function(a,b){return b.total-a.total;});
+  rows=pontoData.map(function(p){
+    var pct=maxTotal>0?Math.round((p.total/maxTotal)*100):0;
+    return '<tr><td><strong>'+String(p.n).padStart(2,'0')+'</strong> <span style="color:var(--txt2);font-size:.78rem;">'+p.nome+'</span></td>'+
+    '<td style="font-weight:700;">'+p.total+'</td><td>'+p.triagem+'</td><td>'+p.consulta+'</td><td>'+p.exame+'</td>'+
+    '<td style="color:var(--g);font-weight:700;">'+p.comp+'</td>'+
+    '<td><div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div></td></tr>';
+  }).join('');
+  tbody.innerHTML=rows;
+}
+
+function exportarRelatorio(){
+  var data=getData();
+  var now=new Date();
+  var txt='RELATÓRIO SEMANAL — Dr. Malaquias — Projeto Óculos\n';
+  txt+='Gerado em: '+now.toLocaleString('pt-BR')+'\n\n';
+  txt+='Total de pacientes: '+data.length+'\n';
+  txt+='Completos: '+data.filter(function(r){return r.status==='completo';}).length+'\n\n';
+  txt+='POR PONTO:\n';
+  for(var i=1;i<=20;i++){
+    var cnt=data.filter(function(r){return r.ponto===i;}).length;
+    if(cnt>0)txt+='Ponto '+String(i).padStart(2,'0')+' ('+PONTOS_NOMES[i-1]+'): '+cnt+' paciente(s)\n';
+  }
+  var blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='relatorio-oculos-'+now.toLocaleDateString('pt-BR').replace(/\//g,'-')+'.txt';
+  a.click();
+}
+
+/* INIT */
+buildPontoSelector();
+renderPainel();
+document.getElementById('f-data-consulta').value=new Date().toISOString().split('T')[0];
+document.getElementById('f-data-exame').value=new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
