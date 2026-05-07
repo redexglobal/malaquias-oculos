@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dr. Malaquias — Painel Óculos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#010D05;--bg2:#021508;--bg3:#031e0a;--bg4:#042812;--c:#00E676;--c2:#00C853;--c3:#69F0AE;--w:#FFF;--w2:#C8F0D8;--w3:#7DB89A;--w4:#3D6B4A;--brd:rgba(0,230,118,.18);--brd2:rgba(0,230,118,.08);--r:#FF4D6D;--y:#FFD60A;}
+[data-theme="light"]{--bg:#F0FAF4;--bg2:#FFF;--bg3:#E8F5EC;--bg4:#D4EDDA;--w:#0A1F12;--w2:#1A4A28;--w3:#2D7A45;--w4:#4A9E68;--brd:rgba(0,150,70,.2);--brd2:rgba(0,150,70,.08);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--w);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(0,230,118,.35);border-radius:2px;}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,230,118,.004) 3px,rgba(0,230,118,.004) 4px);}
+nav{position:sticky;top:0;z-index:200;height:62px;background:rgba(1,13,5,.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;}
+[data-theme="light"] nav{background:rgba(240,250,244,.95);}
+.nav-brand{display:flex;align-items:center;gap:.7rem;}
+.nav-logo{width:36px;height:36px;border-radius:10px;background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);display:grid;place-items:center;filter:drop-shadow(0 0 8px rgba(0,230,118,.3));}
+.nav-title{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:800;}
+.nav-sub{font-size:.52rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--c);margin-top:.1rem;}
+.nav-right{display:flex;align-items:center;gap:.6rem;}
+.ponto-badge{font-family:'Space Grotesk',sans-serif;font-size:.62rem;font-weight:700;color:var(--c);background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);padding:.22rem .7rem;border-radius:50px;letter-spacing:.08em;}
+.btn-icon{width:34px;height:34px;border-radius:8px;border:1px solid var(--brd);background:var(--bg3);cursor:pointer;display:grid;place-items:center;transition:all .2s;color:var(--w3);font-size:.9rem;}
+.btn-icon:hover{border-color:var(--c);color:var(--c);}
+.btn-logout{background:none;border:1px solid rgba(255,77,109,.3);color:var(--r);padding:.32rem .8rem;border-radius:8px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-logout:hover{background:rgba(255,77,109,.1);}
+.layout{display:grid;grid-template-columns:480px 1fr;gap:1.5rem;padding:1.5rem;max-width:1400px;margin:0 auto;}
+@media(max-width:1000px){.layout{grid-template-columns:1fr;}}
+.card{background:var(--bg2);border:1px solid var(--brd);border-radius:20px;overflow:hidden;}
+.card-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:.65rem;}
+.card-icon{width:34px;height:34px;border-radius:10px;background:rgba(0,230,118,.08);border:1px solid var(--brd);display:grid;place-items:center;font-size:1rem;}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:700;}
+.card-body{padding:1.5rem;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+.fg{display:flex;flex-direction:column;gap:.35rem;}
+.fg.full{grid-column:span 2;}
+.fg.tri{grid-column:span 3;}
+label{font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--c);}
+input,select,textarea{background:var(--bg3);border:1px solid var(--brd);color:var(--w);border-radius:10px;padding:.68rem .9rem;font-size:.87rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;resize:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--c);box-shadow:0 0 10px rgba(0,230,118,.12);}
+input::placeholder,textarea::placeholder{color:var(--w4);}
+select option{background:var(--bg3);}
+
+/* GRAUS */
+.graus-section{grid-column:span 2;}
+.graus-label{font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-bottom:.6rem;}
+.graus-grid{display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:.5rem;align-items:center;}
+.grau-eye-label{font-size:.7rem;font-weight:700;color:var(--w3);text-align:right;padding-right:.4rem;}
+.grau-col-label{font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--w4);text-align:center;padding-bottom:.2rem;}
+.graus-grid input{text-align:center;padding:.55rem .5rem;}
+
+/* LENTE OPTIONS */
+.lente-options{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.4rem;}
+.lente-opt{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:.75rem;text-align:center;cursor:pointer;transition:all .2s;}
+.lente-opt:hover{border-color:rgba(0,230,118,.4);}
+.lente-opt.sel{border-color:var(--c);background:rgba(0,230,118,.08);}
+.lente-opt .lo-icon{font-size:1.4rem;margin-bottom:.25rem;}
+.lente-opt .lo-name{font-size:.72rem;font-weight:600;color:var(--w);}
+
+/* STATUS OPTIONS */
+.status-opts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem;}
+.status-opt{padding:.38rem .85rem;border-radius:8px;border:1px solid var(--brd);background:none;color:var(--w3);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.status-opt:hover{border-color:var(--c);}
+.status-opt.sel{border-color:var(--c);background:rgba(0,230,118,.1);color:var(--c);}
+
+.btn-submit{width:100%;background:var(--c);color:#010D05;border:none;padding:.85rem;border-radius:10px;font-size:.88rem;font-weight:800;font-family:'Space Grotesk',sans-serif;letter-spacing:.06em;cursor:pointer;transition:all .2s;margin-top:1rem;}
+.btn-submit:hover{background:var(--c3);box-shadow:0 0 24px rgba(0,230,118,.4);}
+.btn-submit:disabled{opacity:.55;cursor:not-allowed;}
+.success{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.25);border-radius:12px;padding:1rem 1.2rem;display:none;margin-top:1rem;text-align:center;}
+.success.show{display:block;}
+.success strong{color:var(--c);font-size:.9rem;}
+.err{background:rgba(255,77,109,.06);border:1px solid rgba(255,77,109,.25);border-radius:10px;padding:.7rem 1rem;font-size:.8rem;color:var(--r);margin-top:.8rem;display:none;}
+.err.show{display:block;}
+
+/* STATS & LIST */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.25rem;}
+.stat-mini{background:var(--bg2);border:1px solid var(--brd);border-radius:14px;padding:1rem;text-align:center;}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:1.8rem;font-weight:800;color:var(--c);}
+.stat-label{font-size:.6rem;color:var(--w3);margin-top:.2rem;letter-spacing:.06em;text-transform:uppercase;}
+.list-header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--brd);}
+.list-header h3{font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:700;}
+.btn-refresh{background:none;border:1px solid var(--brd);color:var(--w3);padding:.3rem .7rem;border-radius:7px;font-size:.72rem;cursor:pointer;transition:all .2s;}
+.btn-refresh:hover{border-color:var(--c);color:var(--c);}
+.rec-list{padding:.8rem;}
+.rec-item{background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:.9rem 1rem;margin-bottom:.6rem;transition:all .2s;cursor:pointer;}
+.rec-item:hover{border-color:var(--c);}
+.rec-item:last-child{margin-bottom:0;}
+.rec-name{font-weight:700;font-size:.88rem;}
+.rec-meta{display:flex;gap:.8rem;margin-top:.3rem;flex-wrap:wrap;}
+.rec-tag{font-size:.65rem;color:var(--w3);}
+.rec-empty{text-align:center;padding:2rem;color:var(--w3);font-size:.85rem;}
+
+/* STATUS BADGE */
+.status-badge{font-size:.6rem;font-weight:700;padding:.15rem .5rem;border-radius:50px;border:1px solid;}
+.s-aguardando{color:var(--y);border-color:rgba(255,214,10,.4);background:rgba(255,214,10,.08);}
+.s-em_producao{color:var(--c);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.08);}
+.s-pronto{color:#69F0AE;border-color:rgba(105,240,174,.4);background:rgba(105,240,174,.08);}
+.s-entregue{color:var(--w3);border-color:var(--brd);background:var(--brd2);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;place-items:center;}
+.modal-bg.show{display:grid;}
+.modal{background:var(--bg2);border:1px solid var(--brd);border-radius:20px;padding:1.8rem;width:100%;max-width:440px;}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:1.2rem;color:var(--c);}
+.modal-btns{display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.2rem;}
+.btn-save{background:var(--c);color:#010D05;border:none;padding:.6rem 1.4rem;border-radius:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;cursor:pointer;}
+.btn-cancel{background:none;border:1px solid var(--brd);color:var(--w3);padding:.6rem 1.2rem;border-radius:9px;font-weight:600;cursor:pointer;}
+
+.page-loader{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:9000;}
+.page-loader.hide{display:none;}
+.spinner{width:42px;height:42px;border:3px solid var(--brd);border-top-color:var(--c);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}.fg.full,.fg.graus-section{grid-column:span 1;}.graus-grid{grid-template-columns:auto 1fr 1fr;}.graus-grid .grau-col-label:nth-child(n+4),.graus-grid input:nth-child(n+6){display:none;}}
+</style>
+</head>
+<body>
+
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>✏️ Editar Cadastro</h3>
+    <div class="form-grid" style="margin-bottom:.9rem;">
+      <div class="fg"><label>Status</label>
+        <select id="edt-status">
+          <option value="aguardando">Aguardando</option>
+          <option value="em_producao">Em produção</option>
+          <option value="pronto">Pronto</option>
+          <option value="entregue">Entregue</option>
+        </select>
+      </div>
+      <div class="fg"><label>Data de Entrega</label><input id="edt-entrega" type="date"></div>
+      <div class="fg full"><label>Observações</label><textarea id="edt-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg width="28" height="18" viewBox="0 0 52 26" fill="none">
+        <rect x="1" y="5" width="20" height="14" rx="7" stroke="#00E676" stroke-width="2" fill="rgba(0,230,118,.08)"/>
+        <rect x="31" y="5" width="20" height="14" rx="7" stroke="#00E676" stroke-width="2" fill="rgba(0,230,118,.08)"/>
+        <line x1="21" y1="12" x2="31" y2="12" stroke="#00E676" stroke-width="2"/>
+        <line x1="1" y1="9" x2="0" y2="4" stroke="#00E676" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="51" y1="9" x2="52" y2="4" stroke="#00E676" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div><div class="nav-title">Dr. Malaquias</div><div class="nav-sub">Óculos</div></div>
+  </div>
+  <div class="nav-right">
+    <div class="ponto-badge" id="pontoBadge">PONTO —</div>
+    <button class="btn-icon" onclick="toggleTheme()">☀️</button>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">👓</div>
+        <div><div class="card-title">Cadastrar Paciente — Óculos</div></div>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="fg full"><label>Nome do Paciente *</label><input id="f-nome" type="text" placeholder="Nome completo"></div>
+          <div class="fg"><label>Idade</label><input id="f-idade" type="number" min="1" max="120" placeholder="Ex: 45"></div>
+          <div class="fg"><label>WhatsApp</label><input id="f-whats" type="tel" placeholder="(00) 00000-0000"></div>
+
+          <div class="graus-section" style="grid-column:span 2;margin-top:.3rem;">
+            <div class="graus-label">Graus (Refração)</div>
+            <div class="graus-grid">
+              <div></div>
+              <div class="grau-col-label">Esférico</div>
+              <div class="grau-col-label">Cilíndrico</div>
+              <div class="grau-col-label">Eixo</div>
+              <div class="grau-col-label">DP (mm)</div>
+              <div class="grau-eye-label">OD</div>
+              <input id="f-od-esf" placeholder="-2.50">
+              <input id="f-od-cil" placeholder="-0.75">
+              <input id="f-od-eixo" placeholder="180">
+              <input id="f-od-dp" placeholder="32">
+              <div class="grau-eye-label">OE</div>
+              <input id="f-oe-esf" placeholder="-2.25">
+              <input id="f-oe-cil" placeholder="-0.50">
+              <input id="f-oe-eixo" placeholder="175">
+              <input id="f-oe-dp" placeholder="32">
+            </div>
+          </div>
+
+          <div class="fg full">
+            <label>Tipo de Lente</label>
+            <div class="lente-options">
+              <div class="lente-opt" onclick="selLente(this,'Monofocal')"><div class="lo-icon">🔵</div><div class="lo-name">Monofocal</div></div>
+              <div class="lente-opt" onclick="selLente(this,'Bifocal')"><div class="lo-icon">🔷</div><div class="lo-name">Bifocal</div></div>
+              <div class="lente-opt" onclick="selLente(this,'Progressiva')"><div class="lo-icon">💎</div><div class="lo-name">Progressiva</div></div>
+            </div>
+          </div>
+
+          <div class="fg"><label>Material da Lente</label>
+            <select id="f-material">
+              <option value="">Selecione...</option>
+              <option>Resina 1.50</option><option>Resina 1.56</option>
+              <option>Policarbonato</option><option>Trivex</option>
+              <option>Alto Índice 1.67</option><option>Alto Índice 1.74</option>
+            </select>
+          </div>
+          <div class="fg"><label>Tratamento</label>
+            <select id="f-tratamento">
+              <option value="">Selecione...</option>
+              <option>Antirreflexo</option><option>Blue Light</option>
+              <option>Fotossensível</option><option>Polarizado</option><option>Sem tratamento</option>
+            </select>
+          </div>
+
+          <div class="fg full"><label>Armação Escolhida</label><input id="f-armacao" placeholder="Modelo / código da armação"></div>
+
+          <div class="fg full">
+            <label>Status do Pedido</label>
+            <div class="status-opts">
+              <button class="status-opt sel" onclick="selStatus(this,'aguardando')">⏳ Aguardando</button>
+              <button class="status-opt" onclick="selStatus(this,'em_producao')">⚙️ Em produção</button>
+              <button class="status-opt" onclick="selStatus(this,'pronto')">✅ Pronto</button>
+              <button class="status-opt" onclick="selStatus(this,'entregue')">📦 Entregue</button>
+            </div>
+          </div>
+
+          <div class="fg"><label>Valor (R$)</label><input id="f-valor" type="text" placeholder="0,00"></div>
+          <div class="fg"><label>Data de Entrega</label><input id="f-entrega" type="date"></div>
+          <div class="fg full"><label>Observações</label><textarea id="f-obs" rows="2" placeholder="Observações adicionais..."></textarea></div>
+        </div>
+        <button class="btn-submit" id="btnSubmit" onclick="salvar()">✅ Cadastrar Pedido</button>
+        <div class="success" id="success"><strong>✓ Pedido cadastrado com sucesso!</strong><br><span style="font-size:.8rem;color:var(--w3);">Registro salvo no sistema.</span></div>
+        <div class="err" id="err"></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="stats-row">
+      <div class="stat-mini"><div class="stat-val" id="st-hoje">—</div><div class="stat-label">Hoje</div></div>
+      <div class="stat-mini"><div class="stat-val" id="st-semana">—</div><div class="stat-label">Esta Semana</div></div>
+      <div class="stat-mini"><div class="stat-val" id="st-total">—</div><div class="stat-label">Total</div></div>
+    </div>
+    <div class="card">
+      <div class="list-header">
+        <h3>👓 Pedidos de Hoje</h3>
+        <button class="btn-refresh" onclick="loadRecords()">↻ Atualizar</button>
+      </div>
+      <div class="rec-list" id="recList"><div class="rec-empty">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL='https://vuylzbefjwbtibhnczih.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1eWx6YmVmandidGliaG5jemloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMDUxNTIsImV4cCI6MjA5MzY4MTE1Mn0.c2SJ6Yw7O5bGK8lqBtDFkiWke2UNX4I9NJiJ25xprBM';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+let profile=null;
+let currentLente=null;
+let currentStatus='aguardando';
+let editingId=null;
+let allMyRecords=[];
+
+(async()=>{
+  const theme=localStorage.getItem('colabTheme')||'dark';
+  document.documentElement.setAttribute('data-theme',theme);
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){window.location.href='index.html';return;}
+  const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  if(!prof||prof.papel!=='colaborador'){window.location.href='index.html';return;}
+  profile=prof;
+  document.getElementById('pontoBadge').textContent='PONTO '+String(prof.numero_ponto).padStart(2,'0');
+  document.getElementById('pageLoader').classList.add('hide');
+  await loadRecords();
+})();
+
+function selLente(el,val){
+  document.querySelectorAll('.lente-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');currentLente=val;
+}
+function selStatus(el,val){
+  document.querySelectorAll('.status-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');currentStatus=val;
+}
+
+async function salvar(){
+  const nome=document.getElementById('f-nome').value.trim();
+  if(!nome){showErr('Nome do paciente é obrigatório.');return;}
+  const btn=document.getElementById('btnSubmit');
+  btn.disabled=true;btn.textContent='Salvando...';hideErr();
+
+  const grauOD=[document.getElementById('f-od-esf').value,document.getElementById('f-od-cil').value,document.getElementById('f-od-eixo').value,document.getElementById('f-od-dp').value].filter(Boolean).join(' / ')||null;
+  const grauOE=[document.getElementById('f-oe-esf').value,document.getElementById('f-oe-cil').value,document.getElementById('f-oe-eixo').value,document.getElementById('f-oe-dp').value].filter(Boolean).join(' / ')||null;
+
+  const payload={
+    ponto_id:profile.id,
+    nome_paciente:nome,
+    idade:parseInt(document.getElementById('f-idade').value)||null,
+    whatsapp:document.getElementById('f-whats').value.trim()||null,
+    grau_od:grauOD,
+    grau_oe:grauOE,
+    lente_tipo:currentLente||null,
+    material:document.getElementById('f-material').value||null,
+    tratamento:document.getElementById('f-tratamento').value||null,
+    armacao:document.getElementById('f-armacao').value.trim()||null,
+    status_pedido:currentStatus,
+    valor:document.getElementById('f-valor').value.trim()||null,
+    data_entrega:document.getElementById('f-entrega').value||null,
+    observacoes:document.getElementById('f-obs').value.trim()||null
+  };
+
+  const {error}=await sb.from('pacientes_oculos').insert(payload);
+  if(error){showErr('Erro ao salvar: '+error.message);btn.disabled=false;btn.textContent='✅ Cadastrar Pedido';return;}
+
+  document.getElementById('success').classList.add('show');
+  setTimeout(()=>document.getElementById('success').classList.remove('show'),3000);
+  resetForm();
+  btn.disabled=false;btn.textContent='✅ Cadastrar Pedido';
+  await loadRecords();
+}
+
+function resetForm(){
+  ['f-nome','f-idade','f-whats','f-od-esf','f-od-cil','f-od-eixo','f-od-dp','f-oe-esf','f-oe-cil','f-oe-eixo','f-oe-dp','f-armacao','f-valor','f-obs','f-entrega'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-material').value='';
+  document.getElementById('f-tratamento').value='';
+  currentLente=null;currentStatus='aguardando';
+  document.querySelectorAll('.lente-opt').forEach(o=>o.classList.remove('sel'));
+  document.querySelectorAll('.status-opt').forEach(o=>o.classList.remove('sel'));
+  document.querySelector('.status-opt').classList.add('sel');
+}
+
+async function loadRecords(){
+  if(!profile)return;
+  const hoje=new Date().toISOString().split('T')[0];
+  const {data:all}=await sb.from('pacientes_oculos').select('*').eq('ponto_id',profile.id).order('created_at',{ascending:false});
+  allMyRecords=all||[];
+  const todayRecs=allMyRecords.filter(r=>r.created_at&&r.created_at.startsWith(hoje));
+  const semana7=new Date();semana7.setDate(semana7.getDate()-7);
+  const weekRecs=allMyRecords.filter(r=>r.created_at&&new Date(r.created_at)>=semana7);
+  animNum('st-hoje',todayRecs.length);
+  animNum('st-semana',weekRecs.length);
+  animNum('st-total',allMyRecords.length);
+  const list=document.getElementById('recList');
+  if(!todayRecs.length){list.innerHTML='<div class="rec-empty">Nenhum pedido hoje ainda.<br><span style="font-size:.75rem;opacity:.6;">Use o formulário ao lado.</span></div>';return;}
+  list.innerHTML=todayRecs.map(r=>{
+    const st=r.status_pedido||'aguardando';
+    const cAt=r.created_at?new Date(r.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+    return `<div class="rec-item" onclick="openEdit('${r.id}')">
+      <div class="rec-name">${r.nome_paciente||'—'}</div>
+      <div class="rec-meta">
+        <span class="status-badge s-${st}">${statusLabel(st)}</span>
+        ${r.lente_tipo?`<span class="rec-tag">🔵 ${r.lente_tipo}</span>`:''}
+        ${r.armacao?`<span class="rec-tag">👓 ${r.armacao}</span>`:''}
+        <span class="rec-tag" style="margin-left:auto;">${cAt}</span>
+      </div>
+      ${(r.grau_od||r.grau_oe)?`<div style="font-size:.7rem;color:var(--w3);margin-top:.3rem;">OD: ${r.grau_od||'—'} | OE: ${r.grau_oe||'—'}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function statusLabel(s){const m={aguardando:'⏳ Aguardando',em_producao:'⚙️ Em produção',pronto:'✅ Pronto',entregue:'📦 Entregue'};return m[s]||s;}
+
+function openEdit(id){
+  const r=allMyRecords.find(x=>x.id===id);if(!r)return;
+  editingId=id;
+  document.getElementById('edt-status').value=r.status_pedido||'aguardando';
+  document.getElementById('edt-entrega').value=r.data_entrega||'';
+  document.getElementById('edt-obs').value=r.observacoes||'';
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('show');editingId=null;}
+
+async function saveEdit(){
+  if(!editingId)return;
+  await sb.from('pacientes_oculos').update({
+    status_pedido:document.getElementById('edt-status').value,
+    data_entrega:document.getElementById('edt-entrega').value||null,
+    observacoes:document.getElementById('edt-obs').value.trim()||null
+  }).eq('id',editingId);
+  closeModal();
+  await loadRecords();
+}
+
+function showErr(msg){const e=document.getElementById('err');e.textContent=msg;e.classList.add('show');}
+function hideErr(){document.getElementById('err').classList.remove('show');}
+function toggleTheme(){const c=document.documentElement.getAttribute('data-theme');const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('colabTheme',n);}
+async function logout(){await sb.auth.signOut();window.location.href='index.html';}
+function animNum(id,target){const el=document.getElementById(id);if(!el)return;const dur=500,st=Date.now();(function t(){const p=Math.min((Date.now()-st)/dur,1);el.textContent=Math.round(target*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(t);})();}
+document.getElementById('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+</body>
+</html>
