@@ -808,6 +808,23 @@ tr:last-child td { border-bottom: none; }
   .kpi-grid { grid-template-columns: 1fr; }
   .login-container { padding: 32px 20px; }
 }
+
+/* ====== UX MELHORIAS ====== */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list { position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:200; background:var(--bg-secondary); border:1px solid var(--border-glass); border-radius:8px; box-shadow:var(--shadow-card); max-height:220px; overflow-y:auto; display:none; }
+.autocomplete-list.show { display:block; }
+.autocomplete-item { padding:10px 14px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--border-glass); transition:background 0.15s; }
+.autocomplete-item:hover { background:var(--hover-bg); }
+.autocomplete-item:last-child { border-bottom:none; }
+.autocomplete-warn { font-size:11px; color:var(--warning); margin-top:2px; }
+.save-preview { background:var(--bg-card); border:1px solid var(--green-light); border-radius:12px; padding:14px 16px; margin-top:12px; display:none; opacity:0; transform:translateY(-8px); transition:all 0.4s; }
+.save-preview.show { display:block; opacity:1; transform:translateY(0); }
+.save-preview-title { font-size:11px; color:var(--green-light); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.save-preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.save-preview-item { font-size:12px; color:var(--text-secondary); }
+.save-preview-item span { color:var(--text-primary); font-weight:500; }
+.btn-limpar { background:none; border:1px solid var(--border-glass); color:var(--text-muted); padding:10px 18px; border-radius:8px; cursor:pointer; font-size:13px; transition:all 0.2s; font-family:inherit; }
+.btn-limpar:hover { border-color:var(--danger); color:var(--danger); }
 </style>
 </head>
 <body data-theme="dark">
@@ -1012,26 +1029,30 @@ tr:last-child td { border-bottom: none; }
       <p class="page-subtitle">Registrar novo paciente — Óculos</p>
 
       <div class="form-card">
+        <!-- Nome + Autocomplete -->
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group autocomplete-wrap">
             <label class="form-label">Nome do Paciente</label>
-            <input type="text" class="form-input" id="f-nome" placeholder="Nome completo">
+            <input type="text" class="form-input" id="f-nome" placeholder="Nome completo" autocomplete="off" oninput="acNome(this.value)">
+            <div class="autocomplete-list" id="ac-nome-list"></div>
           </div>
           <div class="form-group">
             <label class="form-label">Idade</label>
             <input type="number" class="form-input" id="f-idade" placeholder="Ex: 42">
           </div>
         </div>
+        <!-- WhatsApp + Data -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">WhatsApp</label>
-            <input type="tel" class="form-input" id="f-whatsapp" placeholder="(00) 00000-0000">
+            <input type="tel" class="form-input" id="f-whatsapp" placeholder="(00) 00000-0000" oninput="maskWhatsApp(this)">
           </div>
           <div class="form-group">
             <label class="form-label">Data de Entrega</label>
             <input type="date" class="form-input" id="f-data">
           </div>
         </div>
+        <!-- Graus -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Grau OD (Olho Direito)</label>
@@ -1042,6 +1063,7 @@ tr:last-child td { border-bottom: none; }
             <input type="text" class="form-input" id="f-grau-oe" placeholder="Ex: -1.75">
           </div>
         </div>
+        <!-- Armação + Status -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Armação</label>
@@ -1057,15 +1079,26 @@ tr:last-child td { border-bottom: none; }
             </select>
           </div>
         </div>
+        <!-- Observações -->
         <div class="form-row full">
           <div class="form-group">
             <label class="form-label">Observações</label>
             <textarea class="form-input" id="f-obs" rows="3" placeholder="Anotações adicionais..." style="resize:vertical"></textarea>
           </div>
         </div>
-        <button class="btn-primary" onclick="salvarCadastro()" style="margin-top:16px">
-          <i class="fas fa-save"></i> Salvar Cadastro
-        </button>
+        <div style="display:flex;gap:12px;margin-top:16px;align-items:center;flex-wrap:wrap">
+          <button class="btn-primary" onclick="salvarCadastro()">
+            <i class="fas fa-save"></i> Salvar Cadastro
+          </button>
+          <button class="btn-limpar" onclick="limparFormulario()">
+            <i class="fas fa-times"></i> Limpar
+          </button>
+        </div>
+        <!-- Preview pós-save -->
+        <div class="save-preview" id="save-preview">
+          <div class="save-preview-title"><i class="fas fa-check-circle" style="margin-right:6px"></i>Cadastro realizado</div>
+          <div class="save-preview-grid" id="save-preview-grid"></div>
+        </div>
       </div>
     </div>
 
@@ -1607,16 +1640,69 @@ async function salvarCadastro() {
   if (error) { showToast('Erro ao salvar: ' + error.message, true); return; }
 
   showToast('Paciente cadastrado com sucesso!');
-  document.getElementById('f-nome').value = '';
-  document.getElementById('f-idade').value = '';
-  document.getElementById('f-whatsapp').value = '';
-  document.getElementById('f-grau-od').value = '';
-  document.getElementById('f-grau-oe').value = '';
-  document.getElementById('f-armacao').value = '';
-  document.getElementById('f-status').value = 'pendente';
-  document.getElementById('f-obs').value = '';
-
+  showSavePreview(record);
+  limparFormulario();
   loadData();
+}
+
+// ============== FORM UX ==============
+function maskWhatsApp(inp) {
+  let v = inp.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 7) v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+  else if (v.length > 2) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  else if (v.length > 0) v = '(' + v;
+  inp.value = v;
+}
+
+function acNome(q) {
+  const list = document.getElementById('ac-nome-list');
+  if (!list) return;
+  if (q.length < 2) { list.classList.remove('show'); return; }
+  const matches = (window.allPacientes || [])
+    .filter(p => (p.nome || '').toLowerCase().includes(q.toLowerCase()))
+    .slice(0, 5);
+  if (!matches.length) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.map(p => {
+    const d = p.criado_em ? new Date(p.criado_em).toLocaleDateString('pt-BR') : '';
+    const nome = (p.nome || '').replace(/'/g, "\\'");
+    return `<div class="autocomplete-item" onclick="document.getElementById('f-nome').value='${nome}';document.getElementById('ac-nome-list').classList.remove('show')">
+      ${p.nome || ''}
+      <div class="autocomplete-warn">⚠ Já cadastrado${d ? ' em ' + d : ''}</div>
+    </div>`;
+  }).join('');
+  list.classList.add('show');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) document.getElementById('ac-nome-list')?.classList.remove('show');
+});
+
+function limparFormulario() {
+  ['f-nome','f-idade','f-whatsapp','f-data','f-grau-od','f-grau-oe','f-armacao','f-obs'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const status = document.getElementById('f-status'); if (status) status.value = 'pendente';
+  document.getElementById('ac-nome-list')?.classList.remove('show');
+  const prev = document.getElementById('save-preview'); if (prev) prev.classList.remove('show');
+}
+
+function showSavePreview(rec) {
+  const el = document.getElementById('save-preview');
+  const grid = document.getElementById('save-preview-grid');
+  if (!el || !grid) return;
+  const statusMap = { pendente:'Pendente', em_producao:'Em Produção', pronto:'Pronto p/ Retirada', entregue:'Entregue' };
+  const items = [
+    rec.nome && `<div class="save-preview-item">Nome: <span>${rec.nome}</span></div>`,
+    rec.idade && `<div class="save-preview-item">Idade: <span>${rec.idade}</span></div>`,
+    rec.whatsapp && `<div class="save-preview-item">WhatsApp: <span>${rec.whatsapp}</span></div>`,
+    (rec.grau_od || rec.grau_oe) && `<div class="save-preview-item">Graus: <span>OD ${rec.grau_od||'—'} / OE ${rec.grau_oe||'—'}</span></div>`,
+    rec.armacao && `<div class="save-preview-item">Armação: <span>${rec.armacao}</span></div>`,
+    rec.status_pedido && `<div class="save-preview-item">Status: <span>${statusMap[rec.status_pedido]||rec.status_pedido}</span></div>`,
+    rec.data_entrega && `<div class="save-preview-item">Entrega: <span>${new Date(rec.data_entrega + 'T00:00').toLocaleDateString('pt-BR')}</span></div>`,
+  ].filter(Boolean).join('');
+  grid.innerHTML = items;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 6000);
 }
 
 // ============== UTILS ==============
