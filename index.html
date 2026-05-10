@@ -843,6 +843,10 @@ tr:last-child td { border-bottom: none; }
   backdrop-filter: blur(10px);
   margin-bottom: 20px;
 }
+.star-rating { display:flex; gap:6px; margin-top:4px; }
+.star { font-size:28px; color:#ccc; cursor:pointer; transition:color .15s; }
+.star.active { color:#f59e0b; }
+.star:hover { color:#fbbf24; }
 </style>
 </head>
 <body data-theme="dark">
@@ -1045,6 +1049,7 @@ tr:last-child td { border-bottom: none; }
                 <th>Grau OE</th>
                 <th>Status</th>
                 <th>Ponto</th>
+                <th>Avaliação</th>
               </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -1173,6 +1178,20 @@ tr:last-child td { border-bottom: none; }
           <div class="form-group">
             <label class="form-label">Observações</label>
             <textarea class="form-input" id="f-obs" rows="3" placeholder="Anotações adicionais..." style="resize:vertical"></textarea>
+          </div>
+        </div>
+        <!-- Avaliação por estrelas -->
+        <div class="form-row full">
+          <div class="form-group">
+            <label class="form-label">Avaliação do Atendimento</label>
+            <div class="star-rating" id="star-rating">
+              <span class="star" data-v="1" onclick="setEstrela(1)">★</span>
+              <span class="star" data-v="2" onclick="setEstrela(2)">★</span>
+              <span class="star" data-v="3" onclick="setEstrela(3)">★</span>
+              <span class="star" data-v="4" onclick="setEstrela(4)">★</span>
+              <span class="star" data-v="5" onclick="setEstrela(5)">★</span>
+            </div>
+            <input type="hidden" id="f-avaliacao" value="0">
           </div>
         </div>
         <div style="display:flex;gap:12px;margin-top:16px;align-items:center;flex-wrap:wrap">
@@ -1608,6 +1627,8 @@ function updateTable() {
     const statusLabels = { pendente: 'Pendente', em_producao: 'Produção', pronto: 'Pronto', entregue: 'Entregue' };
     const sc = statusColors[p.status_pedido] || 'dor-mid';
     const sl = statusLabels[p.status_pedido] || p.status_pedido || '—';
+    const av = p.avaliacao || 0;
+    const avStars = '<span style="color:#f59e0b">' + '★'.repeat(av) + '</span><span style="color:#ccc">' + '☆'.repeat(5 - av) + '</span>';
     return `<tr>
       <td style="font-weight:500;color:var(--text-primary)">${p.nome || '—'}</td>
       <td>${p.idade || '—'}</td>
@@ -1616,6 +1637,7 @@ function updateTable() {
       <td>${p.grau_oe || '—'}</td>
       <td><span class="dor-badge ${sc}">${sl}</span></td>
       <td style="font-size:12px;color:var(--text-muted)">${p.cadastrado_por?.substring(0,8) || '—'}</td>
+      <td style="font-size:16px;letter-spacing:1px">${avStars}</td>
     </tr>`;
   }).join('');
 }
@@ -1879,6 +1901,7 @@ async function salvarCadastro() {
     status_pedido: document.getElementById('f-status').value || 'pendente',
     data_entrega: document.getElementById('f-data').value || null,
     observacoes: document.getElementById('f-obs').value.trim() || null,
+    avaliacao: parseInt(document.getElementById('f-avaliacao')?.value||'0'),
     cadastrado_por: currentUser.id,
   };
 
@@ -1913,6 +1936,13 @@ function maskWhatsApp(inp) {
   inp.value = v;
 }
 
+function setEstrela(v){
+  document.getElementById('f-avaliacao').value=v;
+  document.querySelectorAll('#star-rating .star').forEach((s,i)=>{
+    s.classList.toggle('active', i<v);
+  });
+}
+
 function acNome(q) {
   const list = document.getElementById('ac-nome-list');
   if (!list) return;
@@ -1942,6 +1972,8 @@ function limparFormulario() {
   const status = document.getElementById('f-status'); if (status) status.value = 'pendente';
   document.getElementById('ac-nome-list')?.classList.remove('show');
   const prev = document.getElementById('save-preview'); if (prev) prev.classList.remove('show');
+  const fav = document.getElementById('f-avaliacao'); if (fav) fav.value = '0';
+  document.querySelectorAll('#star-rating .star').forEach(s => s.classList.remove('active'));
 }
 
 function showSavePreview(rec) {
@@ -2882,7 +2914,7 @@ window.updateTable=function(){
   const filtered=(allPacientes||[]).filter(p=>!search||(p.nome||'').toLowerCase().includes(search));
   const cnt=document.getElementById('table-count');
   if(cnt)cnt.textContent=filtered.length+' registros';
-  if(!filtered.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum registro encontrado.</td></tr>';return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum registro encontrado.</td></tr>';return;}
   body.innerHTML=filtered.slice(0,50).map(p=>{
     let col4,colDate;
     if(currentProject==='fibro'){
@@ -2894,7 +2926,9 @@ window.updateTable=function(){
       col4=stMap[p.status_pedido]||p.status_pedido||'—';
       colDate=p.data_entrega?new Date(p.data_entrega+'T00:00:00').toLocaleDateString('pt-BR'):'—';
     }
-    return `<tr><td style="font-weight:500;color:var(--text-primary)">${p.nome||'—'}</td><td>${p.idade||'—'}</td><td style="color:var(--text-secondary)">${p.whatsapp||'—'}</td><td>${col4}</td><td>${colDate}</td><td style="font-size:12px;color:var(--text-muted)">${p.cadastrado_por?.substring(0,8)||'—'}</td></tr>`;
+    const av=p.avaliacao||0;
+    const avStars='<span style="color:#f59e0b">'+'★'.repeat(av)+'</span><span style="color:#ccc">'+'☆'.repeat(5-av)+'</span>';
+    return `<tr><td style="font-weight:500;color:var(--text-primary)">${p.nome||'—'}</td><td>${p.idade||'—'}</td><td style="color:var(--text-secondary)">${p.whatsapp||'—'}</td><td>${col4}</td><td>${colDate}</td><td style="font-size:12px;color:var(--text-muted)">${p.cadastrado_por?.substring(0,8)||'—'}</td><td style="font-size:16px;letter-spacing:1px">${avStars}</td></tr>`;
   }).join('');
 };
 
@@ -3197,7 +3231,7 @@ window.updateTable = function() {
   if (cnt) cnt.textContent = filtered.length + ' registros';
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum registro.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum registro.</td></tr>';
     return;
   }
 
@@ -3219,6 +3253,9 @@ window.updateTable = function() {
 
     const pontoNome = pontoMap[p.cadastrado_por] || p.cadastrado_por?.substring(0, 8) || '—';
 
+    const av = p.avaliacao || 0;
+    const avStars = '<span style="color:#f59e0b">' + '★'.repeat(av) + '</span><span style="color:#ccc">' + '☆'.repeat(5 - av) + '</span>';
+
     return `<tr>
       <td style="font-weight:500;color:var(--text-primary)">${p.nome || '—'}</td>
       <td>${p.idade || '—'}</td>
@@ -3226,6 +3263,7 @@ window.updateTable = function() {
       <td>${col4}</td>
       <td>${colDate}</td>
       <td style="font-size:12px;color:var(--text-muted)">${pontoNome}</td>
+      <td style="font-size:16px;letter-spacing:1px">${avStars}</td>
     </tr>`;
   }).join('');
 };
@@ -3382,6 +3420,7 @@ window.salvarCadastro = async function() {
       armacao: document.getElementById('f-armacao')?.value.trim() || null,
       status_pedido: document.getElementById('f-status')?.value || 'pendente',
       data_entrega: document.getElementById('f-data')?.value || null,
+      avaliacao: parseInt(document.getElementById('f-avaliacao')?.value||'0'),
     }),
     observacoes: _obs,
     cadastrado_por: currentUser.id,
