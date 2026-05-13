@@ -1729,12 +1729,14 @@ async function loadData() {
 }
 
 function updateKPIs() {
+  console.log('[DASH KPI ORIG] iniciando. project=', typeof currentProject!=='undefined'?currentProject:'(undef)', 'allPacientes.length=', (allPacientes||[]).length);
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7*86400000).toISOString().split('T')[0];
 
   document.getElementById('kpi-total').textContent = allPacientes.length;
   document.getElementById('kpi-hoje').textContent = allPacientes.filter(p => p.criado_em?.startsWith(today)).length;
   document.getElementById('kpi-semana').textContent = allPacientes.filter(p => p.criado_em >= weekAgo).length;
+  console.log('[DASH KPI ORIG] total=', allPacientes.length, 'hoje=', allPacientes.filter(p => p.criado_em?.startsWith(today)).length, 'semana=', allPacientes.filter(p => p.criado_em >= weekAgo).length);
 
   const dors = allPacientes.filter(p => p.nivel_dor).map(p => p.nivel_dor);
   const media = dors.length ? (dors.reduce((a,b) => a+b, 0) / dors.length).toFixed(1) : '—';
@@ -1791,6 +1793,7 @@ function getChartColors() {
 }
 
 function updateCharts() {
+  console.log('[DASH CHARTS] iniciando. project=', typeof currentProject!=='undefined'?currentProject:'(undef)', 'allPacientes.length=', (allPacientes||[]).length);
   const c = getChartColors();
   Chart.defaults.color = c.text;
 
@@ -1803,6 +1806,7 @@ function updateCharts() {
     const count = allPacientes.filter(p => p.criado_em?.startsWith(key)).length;
     last30.push({ label, count });
   }
+  console.log('[DASH G1] 30 dias buckets:', last30.reduce((s,d)=>s+d.count,0), 'total nos buckets');
 
   if (charts.weekly) charts.weekly.destroy();
   const ctx1 = document.getElementById('chart-weekly');
@@ -1842,6 +1846,7 @@ function updateCharts() {
     if (statusLabels.includes(p.status_pedido)) statusCount[p.status_pedido]++;
     else if (p.status_pedido) statusCount.outros++;
   });
+  console.log('[DASH G2] distribuição status:', statusCount);
   const finalLabels = statusLabels.map(s => statusFmt[s]);
   const finalData = statusLabels.map(s => statusCount[s]);
   const finalColors = [...statusColors];
@@ -1885,11 +1890,13 @@ function updateCharts() {
 /* G3 — Top 10 Pontos com mais cadastros (barras horizontais) */
 async function updateTopPontosChart(c) {
   try {
+    console.log('[DASH G3] iniciando. project=', typeof currentProject!=='undefined'?currentProject:'(undef)');
     c = c || getChartColors();
     const ctx = document.getElementById('chart-top-pontos');
-    if (!ctx) return;
+    if (!ctx) { console.warn('[DASH G3] canvas chart-top-pontos não encontrado'); return; }
     const view = (typeof currentProject !== 'undefined' && currentProject === 'oculos') ? 'v_pontos_oculos' : 'v_pontos_fibro';
     const { data, error } = await sb.from(view).select('nome_ponto,total_cadastros,numero_ponto').order('total_cadastros', { ascending: false }).limit(10);
+    console.log('[DASH G3] top pontos:', { error: error?.message || null, count: data?.length || 0, sample: data?.[0] });
     if (error) { console.error('[DASHBOARD G3]', error); return; }
     const rows = data || [];
     if (charts.topPontos) charts.topPontos.destroy();
@@ -1922,12 +1929,14 @@ async function updateTopPontosChart(c) {
 /* G4 — Cadastros por hora do dia (barras verticais) */
 async function updateHourlyChart(c) {
   try {
+    console.log('[DASH G4] iniciando. project=', typeof currentProject!=='undefined'?currentProject:'(undef)');
     c = c || getChartColors();
     const ctx = document.getElementById('chart-hourly');
-    if (!ctx) return;
+    if (!ctx) { console.warn('[DASH G4] canvas chart-hourly não encontrado'); return; }
     const tabela = (typeof currentProject !== 'undefined' && currentProject === 'oculos') ? 'pacientes_oculos' : 'pacientes_fibro';
     const trinta = new Date(Date.now() - 30*86400000).toISOString();
     const { data, error } = await sb.from(tabela).select('criado_em').gte('criado_em', trinta);
+    console.log('[DASH G4] hora dia:', { error: error?.message || null, count: data?.length || 0, tabela });
     if (error) { console.error('[DASHBOARD G4]', error); return; }
     const porHora = Array(24).fill(0);
     (data || []).forEach(r => { if (r.criado_em) porHora[new Date(r.criado_em).getHours()]++; });
