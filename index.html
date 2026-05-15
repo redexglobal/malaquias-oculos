@@ -4269,6 +4269,18 @@ function _buildStg4Fibro() {
       <div class="stg-resumo" id="stg4-resumo"></div>
       <div class="stg-section-title">Conclusão</div>
       <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Nível de melhora desde a última consulta <span style="color:var(--text-muted);font-size:11px;font-weight:400">(deixe em branco na primeira consulta)</span></label>
+        <select class="form-input" id="s4-melhora">
+          <option value="">— Não se aplica / primeira consulta —</option>
+          <option value="-2">😣 Piorou muito</option>
+          <option value="-1">😟 Piorou um pouco</option>
+          <option value="0">😐 Sem mudança</option>
+          <option value="1">🙂 Melhorou um pouco</option>
+          <option value="2">😊 Melhorou bastante</option>
+          <option value="3">😄 Muito melhor / recuperado</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
         <label class="form-label">Precauções Clínicas</label>
         <textarea class="form-input" id="s4-precaucoes" rows="3" placeholder="Alergias, contraindicações, medicamentos em uso, condições especiais que o Dr. precisa saber..."></textarea>
       </div>
@@ -4306,6 +4318,18 @@ function _buildStg4Oculos() {
           <label class="form-label">Data de entrega prevista</label>
           <input type="date" class="form-input" id="s4-entrega">
         </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Nível de melhora desde o pedido anterior <span style="color:var(--text-muted);font-size:11px;font-weight:400">(deixe em branco no primeiro pedido)</span></label>
+        <select class="form-input" id="s4-melhora">
+          <option value="">— Não se aplica / primeiro pedido —</option>
+          <option value="-2">😣 Piorou muito</option>
+          <option value="-1">😟 Piorou um pouco</option>
+          <option value="0">😐 Sem mudança</option>
+          <option value="1">🙂 Melhorou um pouco</option>
+          <option value="2">😊 Melhorou bastante</option>
+          <option value="3">😄 Muito melhor / recuperado</option>
+        </select>
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label class="form-label">Precauções Clínicas</label>
@@ -4485,6 +4509,7 @@ window._stgSave = async function() {
     idade:_dat.idade||null,
     precaucoes_clinicas:document.getElementById('s4-precaucoes')?.value.trim()||null,
     observacoes:document.getElementById('s4-obs')?.value.trim()||null,
+    nivel_melhora:(()=>{const v=document.getElementById('s4-melhora')?.value;return v===''||v==null?null:parseInt(v);})(),
     cadastrado_por:typeof currentUser!=='undefined'?currentUser.id:null,
   };
 
@@ -4515,8 +4540,8 @@ window._stgSave = async function() {
 
   /* Remove campos com coluna potencialmente faltando — tenta inserir, se falhar remove e tenta sem */
   const newCols = proj==='fibro'
-    ? ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
-    : ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
+    ? ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
+    : ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
 
   let {error} = await sb.from(table).insert(payload);
 
@@ -9234,6 +9259,11 @@ window._abrirFichaPaciente = function(pid) {
   }
 
   corpo += sec('Precauções Clínicas');
+  corpo += row('Nível de melhora', (function(v){
+    if(v==null||v==='')return null;
+    const m={'-2':'😣 Piorou muito','-1':'😟 Piorou um pouco','0':'😐 Sem mudança','1':'🙂 Melhorou um pouco','2':'😊 Melhorou bastante','3':'😄 Muito melhor / recuperado'};
+    return m[String(v)]||('Nível '+v);
+  })(p.nivel_melhora));
   corpo += row('Precauções clínicas', p.precaucoes_clinicas || '(não informado)');
   corpo += row('Observações finais', p.observacoes || '(não informado)');
 
@@ -9479,6 +9509,11 @@ window._abrirHistoricoPaciente=function(key){
       body+=row('Status',v.status_pedido);
       body+=row('Data de entrega',fmtDate(v.data_entrega));
     }
+    body+=row('Nível de melhora',(function(x){
+      if(x==null||x==='')return null;
+      const m={'-2':'😣 Piorou muito','-1':'😟 Piorou um pouco','0':'😐 Sem mudança','1':'🙂 Melhorou um pouco','2':'😊 Melhorou bastante','3':'😄 Muito melhor / recuperado'};
+      return m[String(x)]||('Nível '+x);
+    })(v.nivel_melhora));
     body+=row('Precauções clínicas',v.precaucoes_clinicas);
     body+=row('Observações',v.observacoes);
     body+=row('Cadastrado por',nomeCad(v.cadastrado_por));
