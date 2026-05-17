@@ -2506,15 +2506,15 @@ function advShowToast(pontoNome,pacNome,isErr){
       _advToastTimer=setTimeout(()=>el.classList.remove('show'),4000);
     }
     advFeedPush(pontoNome,pacNome);
-  }catch(e){}
+  }catch(e){console.warn('[malaquias]',e?.message||e);}
 }
 
 try{
   const _origToast=window.showToast;
   window.showToast=function(msg,isError){
-    try{_origToast&&_origToast(msg,isError);}catch(e){}
+    try{_origToast&&_origToast(msg,isError);}catch(e){console.warn('[malaquias]',e?.message||e);}
   };
-}catch(e){}
+}catch(e){console.warn('[malaquias]',e?.message||e);}
 
 /* ---- FEED ---- */
 let _feedVisible=true;
@@ -2549,7 +2549,7 @@ function advInitFeedChannel(){
         try{
           const{data:prof}=await sb.from('profiles').select('nome,nome_ponto').eq('id',rec.cadastrado_por).single();
           if(prof)pontoNome=prof.nome_ponto||prof.nome||pontoNome;
-        }catch(e){}
+        }catch(e){console.warn('[malaquias]',e?.message||e);}
         advFeedPush(pontoNome,rec.nome||'Paciente');
         if(typeof currentProfile!=='undefined'&&currentProfile?.papel==='admin'){
           advShowToast(pontoNome,rec.nome||'Paciente',false);
@@ -2679,7 +2679,7 @@ function advUpdateInactiveBadge(){
       if(navBadge){navBadge.style.display='none';}
       if(inBadge){inBadge.style.display='none';}
     }
-  }catch(e){}
+  }catch(e){console.warn('[malaquias]',e?.message||e);}
 }
 
 /* ---- COMPARAR SECTION ---- */
@@ -2728,7 +2728,7 @@ async function advInitComparar(){
 
 window.advRunComparar=function(){
   const checked=[...document.querySelectorAll('#adv-cmp-checks input:checked')];
-  if(!checked.length){try{showToast('Selecione ao menos 1 ponto',true);}catch(e){}return;}
+  if(!checked.length){try{showToast('Selecione ao menos 1 ponto',true);}catch(_){}return;}
   const hoje=new Date().toISOString().split('T')[0];
   const semana=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
   const labels=checked.map(c=>c.dataset.nome||c.value.substring(0,8));
@@ -2784,7 +2784,7 @@ window.advSetPeriod=function(period,el){
 
 function advFilteredUpdateCharts(){
   if(typeof window._origUpdateCharts!=='function'){
-    try{window._origUpdateCharts=window.updateCharts;}catch(e){}
+    try{window._origUpdateCharts=window.updateCharts;}catch(e){console.warn('[malaquias]',e?.message||e);}
   }
   const now=new Date();
   let cutoff=null;
@@ -2800,7 +2800,7 @@ function advFilteredUpdateCharts(){
     window.allPacientes.length = 0;
     for (const p of filtered) window.allPacientes.push(p);
   }
-  try{if(typeof window._origUpdateCharts==='function')window._origUpdateCharts();}catch(e){try{updateCharts();}catch(e2){}}
+  try{if(typeof window._origUpdateCharts==='function')window._origUpdateCharts();}catch(e){console.warn('[malaquias:updateCharts-retry]',e?.message||e);try{updateCharts();}catch(_){}}
   window.allPacientes.length = 0;
   for (const p of backup) window.allPacientes.push(p);
 }
@@ -2825,9 +2825,9 @@ window.advTogglePresentation=function(){
   const btn=document.getElementById('adv-present-btn');
   if(btn)btn.textContent=_advPresenting?'✕':'⛶';
   if(_advPresenting){
-    try{document.documentElement.requestFullscreen();}catch(e){}
+    try{document.documentElement.requestFullscreen();}catch(_){}
   }else{
-    try{if(document.fullscreenElement)document.exitFullscreen();}catch(e){}
+    try{if(document.fullscreenElement)document.exitFullscreen();}catch(_){}
   }
 };
 
@@ -2861,7 +2861,7 @@ function advInit(){
       if(existing)existing.remove();
       await advRenderHeatMap();
     };
-  }catch(e){}
+  }catch(e){console.warn('[malaquias]',e?.message||e);}
 
   try{
     const _origLoadData=window.loadData;
@@ -2871,7 +2871,7 @@ function advInit(){
       if(card)card.remove();
       advRenderExec();
     };
-  }catch(e){}
+  }catch(e){console.warn('[malaquias]',e?.message||e);}
 
   setTimeout(()=>{
     advRenderHeatMap();
@@ -2947,14 +2947,14 @@ window.loadData = async function(){
   for (const p of (data || [])) window.allPacientes.push(p);
   if(typeof updateKPIs==='function') updateKPIs();
   updateTable();
-  if(typeof updateCharts==='function') try{updateCharts();}catch(e){}
+  if(typeof updateCharts==='function') try{updateCharts();}catch(e){console.warn('[malaquias]',e?.message||e);}
   if(currentProfile?.papel==='admin'){
     if(typeof updateAlerts==='function') updateAlerts();
     if(typeof updateRanking==='function') updateRanking();
     if(typeof updateRelatorios==='function') updateRelatorios();
     if(typeof updatePontos==='function') await updatePontos();
     const ec=document.getElementById('adv-exec-card');if(ec)ec.remove();
-    if(typeof advRenderExec==='function') try{advRenderExec();}catch(e){}
+    if(typeof advRenderExec==='function') try{advRenderExec();}catch(e){console.warn('[malaquias]',e?.message||e);}
   }
 };
 
@@ -3350,9 +3350,9 @@ function _setupMainRealtime(table) {
             window.allPacientes.unshift(payload.new);
           }
           /* Atualiza KPIs */
-          if (typeof updateKPIs === 'function') try { updateKPIs(); } catch(e) {}
+          if (typeof updateKPIs === 'function') try { updateKPIs(); } catch(e) { console.warn('[malaquias]',e?.message||e); }
           /* Atualiza tabela */
-          if (typeof updateTable === 'function') try { updateTable(); } catch(e) {}
+          if (typeof updateTable === 'function') try { updateTable(); } catch(e) { console.warn('[malaquias]',e?.message||e); }
         }
       })
       .subscribe((status) => {
@@ -3382,7 +3382,7 @@ window.switchProject = function(proj, btn) {
 const _prevUpdateCharts = window.updateCharts;
 window.updateCharts = function() {
   /* Chama original */
-  try { if (typeof _prevUpdateCharts === 'function') _prevUpdateCharts(); } catch(e) {}
+  try { if (typeof _prevUpdateCharts === 'function') _prevUpdateCharts(); } catch(e) { console.warn('[malaquias]',e?.message||e); }
 
   /* Se projeto é óculos, substituir gráfico de dor por gráfico de status */
   if (typeof currentProject !== 'undefined' && currentProject === 'oculos') {
@@ -3447,7 +3447,7 @@ window.updateCharts = function() {
         const sub = chartCard.querySelector('.chart-subtitle');
         if (sub) sub.textContent = 'Classificação dos pacientes por intensidade';
       }
-    } catch(e) {}
+    } catch(e) { console.warn('[malaquias]',e?.message||e); }
   }
 };
 
@@ -3515,7 +3515,7 @@ async function _loadPontoMap() {
       map[p.id] = (p.nome_ponto || p.nome || 'Ponto ' + p.numero_ponto);
     });
     window._advPontoMap = map;
-  } catch(e) {}
+  } catch(e) { console.warn('[malaquias]',e?.message||e); }
 }
 
 /* ---- Inicializar quando admin está pronto ---- */
@@ -3704,7 +3704,7 @@ window.doLogout = async function() {
     if (typeof sb !== 'undefined') {
       try { sb.removeAllChannels(); } catch(_){ }
     }
-  } catch(e) {}
+  } catch(e) { console.warn('[malaquias]',e?.message||e); }
   if (typeof _origLogout === 'function') return _origLogout.apply(this, arguments);
   await sb.auth.signOut();
   location.reload();
@@ -5422,12 +5422,12 @@ function _presOpen(){
   _renderPresHeatMap();
   _updatePresFeed();
   po.classList.add('show');
-  try{document.documentElement.requestFullscreen();}catch(e){}
+  try{document.documentElement.requestFullscreen();}catch(_){}
   document.addEventListener('keydown',_presKeyHandler);
 }
 function _presClose(){
   const po=$('pres-overlay');if(po)po.classList.remove('show');
-  try{if(document.fullscreenElement)document.exitFullscreen();}catch(e){}
+  try{if(document.fullscreenElement)document.exitFullscreen();}catch(_){}
   document.removeEventListener('keydown',_presKeyHandler);
 }
 function _presKeyHandler(e){if(e.key==='Escape')_presClose();}
@@ -5638,7 +5638,7 @@ function _initRealtime(){
       /* Busca nome do ponto */
       let pNome=_pMap[rec.cadastrado_por];
       if(!pNome){
-        try{const{data:pr}=await sb.from('profiles').select('nome,nome_ponto').eq('id',rec.cadastrado_por).single();if(pr)_pMap[rec.cadastrado_por]=pNome=pr.nome_ponto||pr.nome||'Ponto';}catch(e){}
+        try{const{data:pr}=await sb.from('profiles').select('nome,nome_ponto').eq('id',rec.cadastrado_por).single();if(pr)_pMap[rec.cadastrado_por]=pNome=pr.nome_ponto||pr.nome||'Ponto';}catch(e){console.warn('[malaquias]',e?.message||e);}
       }
       /* Toast */
       _showToastAdv(pNome||'Ponto',rec.nome||'Paciente');
@@ -6261,7 +6261,7 @@ function _initGlobalRealtime(){
 async function _onNewRecord(rec,proj){
   let pNome=(window._pMapGlobal||{})[rec.cadastrado_por];
   if(!pNome){
-    try{const{data:p}=await sb.from('profiles').select('nome,nome_ponto').eq('id',rec.cadastrado_por).single();if(p){pNome=p.nome_ponto||p.nome;if(window._pMapGlobal)window._pMapGlobal[rec.cadastrado_por]=pNome;}}catch(e){}
+    try{const{data:p}=await sb.from('profiles').select('nome,nome_ponto').eq('id',rec.cadastrado_por).single();if(p){pNome=p.nome_ponto||p.nome;if(window._pMapGlobal)window._pMapGlobal[rec.cadastrado_por]=pNome;}}catch(e){console.warn('[malaquias]',e?.message||e);}
   }
   /* Atualiza widgets em tempo real */
   _updatePulsoDia();
@@ -6272,7 +6272,7 @@ async function _onNewRecord(rec,proj){
 
 function _updateWeeklyCardFF(){
   /* Atualiza o card semanal existente se a fn existir */
-  if(typeof _updateWeeklyCard==='function') try{_updateWeeklyCard();}catch(e){}
+  if(typeof _updateWeeklyCard==='function') try{_updateWeeklyCard();}catch(e){console.warn('[malaquias]',e?.message||e);}
 }
 
 /* ========================================
@@ -9799,7 +9799,7 @@ function _arInit(){
     const _origLD=window.loadData;
     window.loadData=async function(...args){
       const r=await _origLD.apply(this,args);
-      try{ _updateTimestamp(); }catch(e){}
+      try{ _updateTimestamp(); }catch(e){console.warn('[malaquias]',e?.message||e);}
       return r;
     };
     window._loadDataWrappedAR=true;
