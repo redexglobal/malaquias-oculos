@@ -2268,10 +2268,11 @@ async function updatePontos() {
 }
 
 // ============== REALTIME ==============
-sb.channel('fibro-changes')
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pacientes_oculos' }, payload => {
-    if (currentProfile?.papel === 'admin') {
-      showToast('Novo cadastro recebido!');
+sb.channel('oculos-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes_oculos' }, payload => {
+    if (currentProfile?.email === 'natalia@malaquias.com') {
+      const ev = payload.eventType;
+      showToast(ev === 'UPDATE' ? 'Pedido de paciente atualizado!' : ev === 'DELETE' ? 'Pedido de paciente removido!' : 'Novo cadastro recebido!');
       loadData();
     }
   })
