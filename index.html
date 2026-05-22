@@ -1613,12 +1613,25 @@ async function loadData() {
   }
 }
 
+/* Conta PACIENTES ÚNICOS (não linhas). Cada retorno/pedido é uma linha; aqui
+   agrupamos por CPF (sem máscara) ou, sem CPF, por nome+whatsapp — mesma
+   regra das abas Pacientes/Retornos. */
+function _contarPacientesUnicos(list) {
+  const keys = new Set();
+  (list || []).forEach(p => {
+    const cpf = (p.cpf || '').replace(/\D/g, '');
+    const key = cpf ? ('cpf:' + cpf) : ('nw:' + ((p.nome||'').toLowerCase().trim()) + '|' + ((p.whatsapp||'').replace(/\D/g,'')));
+    keys.add(key);
+  });
+  return keys.size;
+}
+
 function updateKPIs() {
   console.log('[DASH KPI ORIG] iniciando. project=', typeof currentProject!=='undefined'?currentProject:'(undef)', 'allPacientes.length=', (allPacientes||[]).length);
   const today = _todayBR();
   const weekAgo = _dateOffsetBR(-7);
 
-  document.getElementById('kpi-total').textContent = allPacientes.length;
+  document.getElementById('kpi-total').textContent = _contarPacientesUnicos(allPacientes);
   document.getElementById('kpi-hoje').textContent = allPacientes.filter(p => _matchDayBR(p.criado_em,today)).length;
   document.getElementById('kpi-semana').textContent = allPacientes.filter(p => p.criado_em >= weekAgo).length;
   console.log('[DASH KPI ORIG] total=', allPacientes.length, 'hoje=', allPacientes.filter(p => _matchDayBR(p.criado_em,today)).length, 'semana=', allPacientes.filter(p => p.criado_em >= weekAgo).length);
