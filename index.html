@@ -11125,7 +11125,6 @@ let _jurSearch='',_jurStatusFilter='',_jurPage=1,_jurSortCol='criado_em',_jurSor
 const _JUR_STEPS=6,_JUR_PG=25;
 let _jurProfMap={};
 let _jurNewRecordId=null;
-let _jurNewRecordId=null;
 
 /* ---- UTILS ---- */
 const _esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -11213,39 +11212,6 @@ window.jurDraftDiscard=function(){
   const nb=document.getElementById('jur-draft-notice');if(nb)nb.style.display='none';
   window._jurDraftData=null;
 };
-
-/* ---- AUTO-SAVE ETAPA 5→6 ---- */
-async function _jurAutoSavePartial(){
-  if(typeof sb==='undefined'||typeof PROJ==='undefined')return;
-  if(_jurNewRecordId)return; /* já salvo */
-  const g=id=>{const el=document.getElementById('jf-'+id);return el?el.value.trim():null;};
-  const nome=g('paciente_nome');if(!nome)return;
-  /* Mostra salvando no título da etapa 6 */
-  const s6=document.getElementById('jur-step-6');
-  const ttl=s6?s6.querySelector('.chart-title'):null;
-  if(ttl)ttl.innerHTML='<i class="fas fa-spinner fa-spin" style="color:var(--accent)"></i> Salvando dados...';
-  const payload={
-    paciente_nome:nome,paciente_cpf:g('paciente_cpf'),paciente_endereco:g('paciente_endereco'),paciente_cidade:g('paciente_cidade'),
-    data_entrada:g('data_entrada')||null,origem:g('origem'),numero_protocolo:g('numero_protocolo'),observacoes_entrada:g('observacoes_entrada'),
-    tipo_beneficio:g('tipo_beneficio'),nit_pis:g('nit_pis'),numero_beneficio:g('numero_beneficio'),data_entrada_inss:g('data_entrada_inss')||null,
-    status_beneficio:g('status_beneficio')||'aguardando',data_decisao:g('data_decisao')||null,
-    diagnostico:g('diagnostico'),cid:g('cid'),historico_medico:g('historico_medico'),
-    advogado_nome:g('advogado_nome'),advogado_oab:g('advogado_oab'),advogado_contato:g('advogado_contato'),
-    status_processo:'em_andamento',
-    projeto:PROJ,cadastrado_por:typeof currentUser!=='undefined'?currentUser?.id:null
-  };
-  const{data:ins,error}=await sb.from('atendimentos_juridicos').insert(payload).select('id').single();
-  if(error){
-    if(ttl)ttl.innerHTML='<i class="fas fa-tasks"></i> Etapa 6 — Controle';
-    if(typeof showToast==='function')showToast('Erro ao salvar: '+error.message,true);
-    return;
-  }
-  _jurNewRecordId=ins.id;
-  if(ttl)ttl.innerHTML='<i class="fas fa-check-circle" style="color:#16a34a"></i> Salvo! Adicione o controle processual (opcional)';
-  const btn=document.getElementById('jur-btn-salvar');
-  if(btn)btn.innerHTML='<i class="fas fa-arrow-right"></i> Concluir';
-  if(typeof showToast==='function')showToast('Cadastro salvo! Preencha o controle abaixo ou clique em Concluir.');
-}
 
 /* ---- AUTO-SAVE ETAPA 5→6 ---- */
 async function _jurAutoSavePartial(){
