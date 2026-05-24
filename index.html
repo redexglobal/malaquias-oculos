@@ -9690,21 +9690,18 @@ window.showSection=function(id,el){
   if (id === 'dashboard' || id === 'sec-dashboard') {
     setTimeout(async () => {
       try {
-        console.log('[DASHBOARD FORCE] disparando loadData + updates');
         if (typeof loadData === 'function') await loadData();
         if (typeof updateKPIs === 'function') updateKPIs();
         if (typeof updateCharts === 'function') updateCharts();
-        console.log('[DASHBOARD FORCE] OK');
-      } catch (e) { console.error('[DASHBOARD FORCE ERROR]', e); }
+      } catch (e) { console.error('[DASHBOARD]', e); }
     }, 100);
   }
   /* Trigger Cadastrados (admin pode trocar de aba e voltar — refresh garantido) */
   if (id === 'cadastros' || id === 'sec-cadastros') {
     setTimeout(() => {
       try {
-        console.log('[CADASTRADOS FORCE] disparando updateTable. cnt=', (window.allPacientes||[]).length);
         if (typeof updateTable === 'function') updateTable();
-      } catch (e) { console.error('[CADASTRADOS FORCE ERROR]', e); }
+      } catch (e) { console.error('[CADASTRADOS]', e); }
     }, 50);
   }
   if (id === _RN_SEC || id === 'relatorio-nat' || id === 'sec-relatorio-nat' || id === 'relatorio-natalia') {
