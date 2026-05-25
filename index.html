@@ -1138,7 +1138,7 @@ tr:last-child td { border-bottom: none; }
             <span style="font-size:12px;color:var(--text-muted)" id="table-count">0 registros</span>
           </div>
           <div class="table-actions">
-            <input type="text" class="search-input" placeholder="Buscar paciente..." id="search-paciente" oninput="filterTable()">
+            <input type="text" class="search-input" placeholder="Buscar paciente..." id="search-paciente" oninput="window._filterDebounced()">
             <input type="date" class="search-input" id="search-data" title="Buscar por data de atendimento ou cadastro" oninput="filterTable()" style="max-width:175px">
             <button class="btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> CSV</button>
           </div>
@@ -1809,7 +1809,11 @@ tr:last-child td { border-bottom: none; }
           <p class="page-subtitle">Pedidos de óculos agendados para entrega — imprima e entregue à equipe</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label style="font-size:13px;color:var(--text-muted);white-space:nowrap">Data da entrega:</label>
+          <label style="font-size:13px;color:var(--text-muted);white-space:nowrap">Filtrar por:</label>
+          <select id="rd-modo" class="form-input" style="max-width:170px" onchange="window._rdLoad()">
+            <option value="data_entrega" selected>Data de entrega</option>
+            <option value="criado_em">Data de cadastro</option>
+          </select>
           <input type="date" id="rd-data" class="form-input" style="max-width:160px" onchange="window._rdLoad()">
           <button class="btn-limpar" onclick="window._rdToday()" title="Hoje"><i class="fas fa-calendar-day"></i> Hoje</button>
           <button class="btn-primary" onclick="window._rdPrint()" title="Imprimir relatório"><i class="fas fa-print"></i> Imprimir</button>
@@ -2757,6 +2761,15 @@ window._whatsValido = function(s){
   if(/^(\d)\1+$/.test(d)) return false;
   return true;
 };
+
+/* Debounce do filterTable (escala) */
+(function(){
+  let _t = null;
+  window._filterDebounced = function(){
+    if(_t) clearTimeout(_t);
+    _t = setTimeout(()=>{ if(typeof filterTable==='function') filterTable(); }, 220);
+  };
+})();
 
 /* Modal de CONFIRMACAO DUPLA pra DELETE (pede digitar o nome) */
 window._delConfirm = function(nomeAlvo, onConfirm){
@@ -12313,13 +12326,21 @@ window._rdLoad=async function(){
   if(typeof sb==='undefined')return;
   const inp=document.getElementById('rd-data');
   const data=inp?.value||_rdTomorrowBR();
-  const hDt=document.getElementById('rd-doc-data');if(hDt)hDt.textContent='Entrega em: '+_rdFmt(data);
+  const modoSel=document.getElementById('rd-modo');
+  const modo=(modoSel?.value)||DATE_FIELD;
+  const labelModo=modo==='criado_em'?'Cadastrados em':'Entrega em';
+  const hDt=document.getElementById('rd-doc-data');if(hDt)hDt.textContent=labelModo+': '+_rdFmt(data);
   const hPt=document.getElementById('rd-doc-ponto');
   const isAdm=_rdIsAdm();
   const nomePonto=(typeof currentProfile!=='undefined'&&currentProfile)?(currentProfile.nome_ponto||currentProfile.nome||currentProfile.email||''):'';
   if(hPt)hPt.textContent=isAdm?'Visão geral (todos os pontos)':('Ponto: '+nomePonto);
 
-  let q=sb.from(TBL).select('id,nome,cpf,whatsapp,idade,grau_od,grau_oe,adicao,nome_medico,armacao,tipo_lente,tratamentos_lente,valor_pedido,status_pedido,observacoes,precaucoes_clinicas,'+DATE_FIELD+',cadastrado_por,criado_em').eq(DATE_FIELD,data).order('nome',{ascending:true}).limit(500);
+  let q=sb.from(TBL).select('id,nome,cpf,whatsapp,idade,grau_od,grau_oe,adicao,nome_medico,armacao,tipo_lente,tratamentos_lente,valor_pedido,status_pedido,observacoes,precaucoes_clinicas,'+DATE_FIELD+',cadastrado_por,criado_em').order('nome',{ascending:true}).limit(500);
+  if(modo==='criado_em'){
+    q=q.gte('criado_em',data+'T00:00:00').lte('criado_em',data+'T23:59:59');
+  } else {
+    q=q.eq(DATE_FIELD,data);
+  }
   if(!isAdm&&typeof currentUser!=='undefined'&&currentUser)q=q.eq('cadastrado_por',currentUser.id);
   const{data:rows,error}=await q;
   if(error){console.error('[rd:load]',error.message);document.getElementById('rd-lista').innerHTML='<div class="rd-vazio">Erro ao carregar: '+_rdEsc(error.message)+'</div>';return;}
@@ -12342,7 +12363,8 @@ window._rdLoad=async function(){
 
   const box=document.getElementById('rd-lista');if(!box)return;
   if(!lista.length){
-    box.innerHTML='<div class="rd-vazio"><i class="fas fa-calendar-times" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4"></i>Nenhum pedido agendado para entrega em '+_rdFmtShort(data)+'.<br><small>'+(isAdm?'(em todo o sistema)':'(no seu ponto)')+'</small></div>';
+    const labelSem=modo==='criado_em'?'cadastrado em':'agendado pra entrega em';
+    box.innerHTML='<div class="rd-vazio"><i class="fas fa-calendar-times" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4"></i>Nenhum pedido '+labelSem+' '+_rdFmtShort(data)+'.<br><small>'+(isAdm?'(em todo o sistema)':'(no seu ponto)')+'</small></div>';
     return;
   }
   box.innerHTML=lista.map((r,i)=>{
