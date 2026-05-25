@@ -997,6 +997,9 @@ tr:last-child td { border-bottom: none; }
       <div class="nav-item" data-section="novo" onclick="showSection('novo', this)">
         <i class="fas fa-plus-circle"></i> Novo Cadastro
       </div>
+      <div class="nav-item" data-section="relatorio-dia" onclick="showSection('relatorio-dia', this)">
+        <i class="fas fa-clipboard-list"></i> Relatório do Dia
+      </div>
     </div>
 
     <div class="nav-section" id="nav-juridico-section" style="display:none">
@@ -1790,6 +1793,34 @@ tr:last-child td { border-bottom: none; }
       <div class="chart-card">
         <div class="chart-title"><i class="fas fa-calendar-alt"></i> Próximos 30 dias — prazos a vencer</div>
         <div id="jan-prazos-lista" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- ===== RELATÓRIO DO DIA ===== -->
+    <div class="section" id="sec-relatorio-dia">
+      <div class="rd-screen-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div>
+          <h1 class="page-title">Relatório do Dia</h1>
+          <p class="page-subtitle">Pedidos de óculos agendados para entrega — imprima e entregue à equipe</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:13px;color:var(--text-muted);white-space:nowrap">Data da entrega:</label>
+          <input type="date" id="rd-data" class="form-input" style="max-width:160px" onchange="window._rdLoad()">
+          <button class="btn-limpar" onclick="window._rdToday()" title="Hoje"><i class="fas fa-calendar-day"></i> Hoje</button>
+          <button class="btn-primary" onclick="window._rdPrint()" title="Imprimir relatório"><i class="fas fa-print"></i> Imprimir</button>
+        </div>
+      </div>
+
+      <div id="rd-print-area" class="chart-card" style="padding:20px">
+        <div class="rd-doc-header" style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--border-glass);padding-bottom:14px;margin-bottom:16px">
+          <div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent);letter-spacing:.02em">Pedidos do Dia — Óculos</div>
+            <div id="rd-doc-data" style="font-size:14px;color:var(--text-secondary);margin-top:4px"></div>
+            <div id="rd-doc-ponto" style="font-size:13px;color:var(--text-muted);margin-top:2px"></div>
+          </div>
+          <div id="rd-doc-total" style="font-size:13px;color:var(--text-muted);text-align:right;white-space:nowrap"></div>
+        </div>
+        <div id="rd-lista" style="font-size:14px"></div>
       </div>
     </div>
 
@@ -12066,6 +12097,167 @@ const _prevSS=window.showSection;
 window.showSection=function(id,el){
   if(typeof _prevSS==='function')_prevSS.apply(this,arguments);
   if(id==='juridico-analytics'||id==='sec-juridico-analytics')setTimeout(_janLoad,80);
+};
+
+})();
+</script>
+
+<style>
+/* ===== RELATÓRIO DO DIA — estilos tela ===== */
+.rd-card{background:var(--card-bg,#0e1e1c);border:1px solid var(--border-glass);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+.rd-num{flex:0 0 32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.rd-info{flex:1;min-width:0}
+.rd-nome{font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.rd-meta{font-size:12px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.rd-clinico{font-size:12px;color:var(--text-secondary);line-height:1.5}
+.rd-vazio{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px}
+</style>
+
+<script>
+/* ---- RELATÓRIO DO DIA (pedidos a entregar) ---- */
+(function(){
+'use strict';
+
+const TBL = 'pacientes_oculos';
+const DATE_FIELD = 'data_entrega';
+
+function _rdFmt(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}catch(e){return d;}}
+function _rdFmtShort(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('pt-BR');}catch(e){return d;}}
+function _rdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _rdIsAdm(){return typeof currentProfile!=='undefined'&&currentProfile?.papel==='admin';}
+
+function _rdTomorrowBR(){
+  const d=new Date();d.setDate(d.getDate()+1);
+  return d.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+}
+
+window._rdToday=function(){
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+  const inp=document.getElementById('rd-data');if(inp){inp.value=today;window._rdLoad();}
+};
+
+window._rdLoad=async function(){
+  if(typeof sb==='undefined')return;
+  const inp=document.getElementById('rd-data');
+  const data=inp?.value||_rdTomorrowBR();
+  const hDt=document.getElementById('rd-doc-data');if(hDt)hDt.textContent='Entrega em: '+_rdFmt(data);
+  const hPt=document.getElementById('rd-doc-ponto');
+  const isAdm=_rdIsAdm();
+  const nomePonto=(typeof currentProfile!=='undefined'&&currentProfile)?(currentProfile.nome_ponto||currentProfile.nome||currentProfile.email||''):'';
+  if(hPt)hPt.textContent=isAdm?'Visão geral (todos os pontos)':('Ponto: '+nomePonto);
+
+  let q=sb.from(TBL).select('id,nome,cpf,whatsapp,idade,grau_od,grau_oe,adicao,nome_medico,armacao,tipo_lente,tratamentos_lente,valor_pedido,status_pedido,observacoes,precaucoes_clinicas,'+DATE_FIELD+',cadastrado_por,criado_em').eq(DATE_FIELD,data).order('nome',{ascending:true}).limit(500);
+  if(!isAdm&&typeof currentUser!=='undefined'&&currentUser)q=q.eq('cadastrado_por',currentUser.id);
+  const{data:rows,error}=await q;
+  if(error){console.error('[rd:load]',error.message);document.getElementById('rd-lista').innerHTML='<div class="rd-vazio">Erro ao carregar: '+_rdEsc(error.message)+'</div>';return;}
+
+  /* Dedup por paciente único */
+  const grupo=new Map();
+  (rows||[]).forEach(r=>{
+    const cpfRaw=(r.cpf||'').replace(/\D/g,'');
+    const cpfOK=window._cpfValido&&window._cpfValido(cpfRaw);
+    const key=cpfOK?'cpf:'+cpfRaw:'nw:'+((r.nome||'').toLowerCase().trim())+'|'+((r.whatsapp||'').replace(/\D/g,''));
+    if(!grupo.has(key))grupo.set(key,r);
+    else{
+      const cur=grupo.get(key);
+      if((r.criado_em||'')>(cur.criado_em||''))grupo.set(key,r);
+    }
+  });
+  const lista=[...grupo.values()];
+
+  const total=document.getElementById('rd-doc-total');if(total)total.innerHTML=lista.length+' pedido'+(lista.length===1?'':'s')+' agendado'+(lista.length===1?'':'s');
+
+  const box=document.getElementById('rd-lista');if(!box)return;
+  if(!lista.length){
+    box.innerHTML='<div class="rd-vazio"><i class="fas fa-calendar-times" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4"></i>Nenhum pedido agendado para entrega em '+_rdFmtShort(data)+'.<br><small>'+(isAdm?'(em todo o sistema)':'(no seu ponto)')+'</small></div>';
+    return;
+  }
+  box.innerHTML=lista.map((r,i)=>{
+    const idade=r.idade?(' · '+r.idade+' anos'):'';
+    const wpp=r.whatsapp?('<span><i class="fas fa-phone" style="font-size:10px"></i> '+_rdEsc(r.whatsapp)+'</span>'):'';
+    const cpf=r.cpf?('<span>CPF: '+_rdEsc(r.cpf)+'</span>'):'';
+    const grau=(r.grau_od||r.grau_oe)?('<span><strong>OD:</strong> '+_rdEsc(r.grau_od||'—')+' · <strong>OE:</strong> '+_rdEsc(r.grau_oe||'—')+(r.adicao?(' · <strong>Ad:</strong> '+_rdEsc(r.adicao)):'')+'</span>'):'';
+    const med=r.nome_medico?('<span><strong>Médico:</strong> '+_rdEsc(r.nome_medico)+'</span>'):'';
+    const stat=r.status_pedido?('<span><strong>Status:</strong> '+_rdEsc(r.status_pedido)+'</span>'):'';
+    const arm=r.armacao?('<div><strong>Armação:</strong> '+_rdEsc(r.armacao)+'</div>'):'';
+    const lente=(r.tipo_lente||r.tratamentos_lente)?('<div><strong>Lente:</strong> '+_rdEsc(r.tipo_lente||'')+(r.tratamentos_lente?(' — '+_rdEsc(r.tratamentos_lente)):'')+'</div>'):'';
+    const val=r.valor_pedido!=null?('<div><strong>Valor:</strong> R$ '+_rdEsc(r.valor_pedido)+'</div>'):'';
+    const prec=r.precaucoes_clinicas?('<div style="color:#f59e0b"><strong>⚠️ Precauções:</strong> '+_rdEsc(r.precaucoes_clinicas)+'</div>'):'';
+    const obs=r.observacoes?('<div><strong>Obs:</strong> '+_rdEsc(r.observacoes)+'</div>'):'';
+    return '<div class="rd-card">'+
+      '<div class="rd-num">'+(i+1)+'</div>'+
+      '<div class="rd-info">'+
+        '<div class="rd-nome">'+_rdEsc(r.nome||'(sem nome)')+idade+'</div>'+
+        '<div class="rd-meta">'+wpp+cpf+grau+med+stat+'</div>'+
+        '<div class="rd-clinico">'+arm+lente+val+prec+obs+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+};
+
+window._rdPrint=function(){
+  const inp=document.getElementById('rd-data');
+  const data=inp?.value||_rdTomorrowBR();
+  const isAdm=_rdIsAdm();
+  const nomePonto=(typeof currentProfile!=='undefined'&&currentProfile)?(currentProfile.nome_ponto||currentProfile.nome||currentProfile.email||''):'';
+  const lista=document.getElementById('rd-lista')?.innerHTML||'';
+  const total=document.getElementById('rd-doc-total')?.innerHTML||'';
+  if(!lista||lista.includes('rd-vazio')){if(typeof showToast==='function')showToast('Nada para imprimir',true);return;}
+  const ger=new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+  const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório do Dia — '+_rdFmtShort(data)+'</title>'+
+    '<style>'+
+    '@page{margin:1.5cm;size:A4}'+
+    '*{box-sizing:border-box}'+
+    'body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#000;background:#fff;padding:0;margin:0;font-size:12px;line-height:1.4}'+
+    '.h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:18px}'+
+    '.h h1{font-size:22px;font-weight:800;margin:0;color:#000}'+
+    '.h .sub{font-size:13px;color:#555;margin-top:4px}'+
+    '.h .ponto{font-size:12px;color:#777;margin-top:2px}'+
+    '.h .total{font-size:12px;color:#555;text-align:right;white-space:nowrap}'+
+    '.rd-card{border:1px solid #ccc;border-radius:8px;padding:11px 14px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;page-break-inside:avoid}'+
+    '.rd-num{flex:0 0 28px;height:28px;border-radius:50%;background:#000;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px}'+
+    '.rd-info{flex:1;min-width:0}'+
+    '.rd-nome{font-size:14px;font-weight:700;margin-bottom:3px}'+
+    '.rd-meta{font-size:11px;color:#444;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:5px}'+
+    '.rd-clinico{font-size:11px;color:#333;line-height:1.5}'+
+    '.rd-clinico>div{margin-bottom:2px}'+
+    '.anot{margin-top:24px;padding-top:14px;border-top:1px dashed #999}'+
+    '.anot .lb{font-size:11px;color:#444;margin-bottom:8px;font-weight:700}'+
+    '.anot .line{border-bottom:1px solid #aaa;height:22px;margin-bottom:8px}'+
+    '.foot{font-size:10px;color:#777;text-align:right;margin-top:18px}'+
+    'i{display:none}'+
+    '</style></head><body>'+
+    '<div class="h">'+
+      '<div>'+
+        '<h1>Pedidos do Dia — Óculos</h1>'+
+        '<div class="sub">Entrega em: <strong>'+_rdFmt(data)+'</strong></div>'+
+        '<div class="ponto">'+(isAdm?'Visão geral (todos os pontos)':('Ponto: '+_rdEsc(nomePonto)))+'</div>'+
+      '</div>'+
+      '<div class="total">'+total+'</div>'+
+    '</div>'+
+    lista+
+    '<div class="anot"><div class="lb">Anotações:</div>'+
+      '<div class="line"></div><div class="line"></div><div class="line"></div>'+
+      '<div class="line"></div><div class="line"></div><div class="line"></div>'+
+    '</div>'+
+    '<div class="foot">Gerado em '+ger+' — Sistema Dr. Malaquias</div>'+
+    '<script>window.onload=function(){window.print();}<\/script>'+
+    '</body></html>';
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else if(typeof showToast==='function')showToast('Permita pop-ups para imprimir',true);
+};
+
+const _rdPrevSS=window.showSection;
+window.showSection=function(id,el){
+  if(typeof _rdPrevSS==='function')_rdPrevSS.apply(this,arguments);
+  if(id==='relatorio-dia'||id==='sec-relatorio-dia'){
+    setTimeout(()=>{
+      const inp=document.getElementById('rd-data');
+      if(inp&&!inp.value)inp.value=_rdTomorrowBR();
+      window._rdLoad();
+    },60);
+  }
 };
 
 })();
