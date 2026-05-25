@@ -2205,7 +2205,7 @@ function updateTable() {
       <td>${p.grau_od || '—'}</td>
       <td>${p.grau_oe || '—'}</td>
       <td><span class="dor-badge ${sc}">${sl}</span></td>
-      <td style="font-size:12px;color:var(--text-muted)">${p.cadastrado_por?.substring(0,8) || '—'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${(()=>{const n=(window._pNumMap||{})[p.cadastrado_por];const nm=(window._pMapGlobal||{})[p.cadastrado_por]||'';return n?`<span style="background:rgba(0,230,118,.13);color:var(--accent);padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap" title="${nm.replace(/"/g,'&quot;')}">P${String(n).padStart(2,'0')}</span>`:(p.cadastrado_por?'<span style="opacity:.5;font-size:11px">(sem ponto)</span>':'—');})()}</td>
       <td style="font-size:16px;letter-spacing:1px">${avStars}</td>
     </tr>`;
   }).join('');
@@ -2855,7 +2855,8 @@ function _natReloadDebounced(){
 }
 sb.channel('oculos-changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes_oculos' }, payload => {
-    if (currentProfile?.email === 'natalia@malaquias.com') {
+    /* Realtime liberado pra TODOS os admins (era restrito a natalia) */
+    if (currentProfile?.papel === 'admin') {
       const ev = payload.eventType;
       showToast(ev === 'UPDATE' ? 'Pedido de paciente atualizado!' : ev === 'DELETE' ? 'Pedido de paciente removido!' : 'Novo cadastro recebido!');
       _natReloadDebounced();
@@ -3651,7 +3652,10 @@ window.updateTable=function(){
     }
     const av=p.avaliacao||0;
     const avStars='<span style="color:#f59e0b">'+'★'.repeat(av)+'</span><span style="color:#ccc">'+'☆'.repeat(5-av)+'</span>';
-    return `<tr><td style="font-weight:500;color:var(--text-primary)">${p.nome||'—'}</td><td>${p.idade||'—'}</td><td style="color:var(--text-secondary)">${p.whatsapp||'—'}</td><td>${col4}</td><td>${colDate}</td><td style="font-size:12px;color:var(--text-muted)">${p.cadastrado_por?.substring(0,8)||'—'}</td><td style="font-size:16px;letter-spacing:1px">${avStars}</td></tr>`;
+    const _pNum=(window._pNumMap||{})[p.cadastrado_por];
+    const _pNome=(window._pMapGlobal||{})[p.cadastrado_por]||'';
+    const _pLabel=_pNum?`<span style="background:rgba(0,230,118,.13);color:var(--accent);padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap" title="${_pNome.replace(/"/g,'&quot;')}">P${String(_pNum).padStart(2,'0')}</span>`:(p.cadastrado_por?'<span style="opacity:.5;font-size:11px">(sem ponto)</span>':'—');
+    return `<tr><td style="font-weight:500;color:var(--text-primary)">${p.nome||'—'}</td><td>${p.idade||'—'}</td><td style="color:var(--text-secondary)">${p.whatsapp||'—'}</td><td>${col4}</td><td>${colDate}</td><td style="font-size:12px;color:var(--text-muted)">${_pLabel}</td><td style="font-size:16px;letter-spacing:1px">${avStars}</td></tr>`;
   }).join('');
 };
 
@@ -7085,13 +7089,20 @@ async function _ffInit(){
     _injectTimeline();
     _injectOfflineCard();
     _injectRecordsCard();
-    /* Popula pmap global */
+    /* Popula pmap global + numero_ponto map */
     if(!window._pMapGlobal) window._pMapGlobal=window._pMap||window._pdPontoMap||{};
-    /* Carrega profiles se vazio */
-    if(!Object.keys(window._pMapGlobal||{}).length){
+    if(!window._pNumMap) window._pNumMap={};
+    if(!Object.keys(window._pMapGlobal||{}).length||!Object.keys(window._pNumMap||{}).length){
       const proj=_proj()==='oculos'?'oculos':'fibromialgia';
-      const{data}=await sb.from('profiles').select('id,nome,nome_ponto').eq('papel','colaborador').eq('projeto',proj);
-      if(data){window._pMapGlobal={};data.forEach(p=>window._pMapGlobal[p.id]=p.nome_ponto||p.nome);}
+      const{data}=await sb.from('profiles').select('id,nome,nome_ponto,numero_ponto').eq('papel','colaborador').eq('projeto',proj);
+      if(data){
+        window._pMapGlobal={};
+        window._pNumMap={};
+        data.forEach(p=>{
+          window._pMapGlobal[p.id]=p.nome_ponto||p.nome;
+          window._pNumMap[p.id]=p.numero_ponto;
+        });
+      }
     }
     _updatePulsoDia();_updateTimeline();_updateOfflineCard();_updateRecordsCard();
     _initGlobalRealtime();
