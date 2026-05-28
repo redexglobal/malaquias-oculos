@@ -9,6 +9,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 <style>
+/* PERF MODE GLOBAL (2026-05-28) — clique instantâneo (mesmo override do fibro) */
+*, *::before, *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition-duration: 0.12s !important;
+}
+.bg-blob, [class*="float"], [class*="pulse"] { animation-duration: 60s !important; }
+.modal, .drawer, .toast, [class*="modal"], [class*="drawer"], [class*="toast"] {
+  transition-duration: 0.18s !important;
+}
+
 :root {
   --gold: #00e676;
   --gold-light: #69ff47;
