@@ -2927,7 +2927,10 @@ sb.channel('oculos-changes')
     /* Realtime liberado pra TODOS os admins (era restrito a natalia) */
     if (currentProfile?.papel === 'admin') {
       const ev = payload.eventType;
-      showToast(ev === 'UPDATE' ? 'Pedido de paciente atualizado!' : ev === 'DELETE' ? 'Pedido de paciente removido!' : 'Novo cadastro recebido!');
+      /* INSERT: o toast bonito (com nome do paciente + ponto) vem do canal 'rt-new'
+         — aqui so notificamos UPDATE/DELETE pra nao duplicar a notificacao. (paridade fibro) */
+      if (ev === 'UPDATE') showToast('Pedido de paciente atualizado!');
+      else if (ev === 'DELETE') showToast('Pedido de paciente removido!');
       if (ev === 'INSERT') {
         window._cadNewCount = (window._cadNewCount || 0) + 1;
         const b = document.getElementById('cad-new-badge');
@@ -4081,29 +4084,13 @@ try {
 let _mainChannel = null;
 
 function _setupMainRealtime(table) {
+  /* DESATIVADO (2026-06-03, paridade fibro) — canal redundante com 'oculos-changes'
+     e nocivo: updateTable() sem throttle a cada insert + unshift SEM dedup (contava
+     paciente 2x). 'oculos-changes' ja cobre o realtime do admin (via _natReloadDebounced).
+     Mantemos a funcao (chamada em 2 lugares) so pra limpar canal antigo. */
   try {
-    if (_mainChannel) {
-      sb.removeChannel(_mainChannel);
-      _mainChannel = null;
-    }
-    _mainChannel = sb.channel('main_rt_' + table)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, payload => {
-        if (typeof currentProfile !== 'undefined' && currentProfile?.papel === 'admin') {
-          /* Atualiza dados do admin em tempo real */
-          if (Array.isArray(window.allPacientes)) {
-            window.allPacientes.unshift(payload.new);
-          }
-          /* Atualiza KPIs */
-          if (typeof updateKPIs === 'function') try { updateKPIs(); } catch(e) { console.warn('[malaquias]',e?.message||e); }
-          /* Atualiza tabela */
-          if (typeof updateTable === 'function') try { updateTable(); } catch(e) { console.warn('[malaquias]',e?.message||e); }
-        }
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-        }
-      });
-  } catch(e) { console.warn('_setupMainRealtime:', e); }
+    if (_mainChannel) { sb.removeChannel(_mainChannel); _mainChannel = null; }
+  } catch(e) { console.warn('_setupMainRealtime cleanup:', e); }
 }
 
 /* Inicializa realtime com a tabela do projeto atual */
@@ -4748,6 +4735,21 @@ body[data-theme="dark"] { background: #071a0f !important; }
 }
 .btn-finalizar:hover { box-shadow: 0 0 28px rgba(0,200,83,.5); transform: translateY(-1px); }
 .btn-finalizar:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+/* Estados de feedback do salvar — spinner girando e "Salvo!" verde brilhante (paridade fibro) */
+.btn-finalizar.is-saving { background: linear-gradient(135deg,#00a847,#00c853); }
+.btn-finalizar.is-saved {
+  background: linear-gradient(135deg,#00e676,#69f0ae) !important;
+  box-shadow: 0 0 34px rgba(0,230,118,.8);
+  animation: mq-saved-pop .45s ease;
+}
+.btn-finalizar.is-saving:disabled, .btn-finalizar.is-saved:disabled { opacity: 1; cursor: default; transform: none; }
+.btn-spin {
+  display:inline-block; width:17px; height:17px; vertical-align:-3px; margin-right:9px;
+  border:3px solid rgba(7,26,15,.30); border-top-color:#071a0f;
+  border-radius:50%; animation: mq-spin .6s linear infinite;
+}
+@keyframes mq-spin { to { transform: rotate(360deg); } }
+@keyframes mq-saved-pop { 0%{transform:scale(.97)} 55%{transform:scale(1.035)} 100%{transform:scale(1)} }
 
 @media(max-width:600px) {
   .stg-dot-label { display: none; }
@@ -5258,7 +5260,7 @@ window._stgSave = async function() {
   }
 
   const btn=document.getElementById('btn-finalizar');
-  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  if(btn){ btn.disabled=true; btn.classList.remove('is-saved'); btn.classList.add('is-saving'); btn.innerHTML='<span class="btn-spin" aria-hidden="true"></span> Salvando...'; }
 
   const table=proj==='oculos'?'pacientes_oculos':'pacientes_fibro';
 
@@ -5323,14 +5325,26 @@ window._stgSave = async function() {
     }
   }
 
-  if(btn){btn.disabled=false;btn.textContent=proj==='oculos'?'✅ Finalizar Pedido':'✅ Finalizar Cadastro';}
+  const _btnLabel = proj==='oculos'?'✅ Finalizar Pedido':'✅ Finalizar Cadastro';
 
-  if(error){_toast('Erro: '+error.message,true);console.error(error);return;}
+  if(error){
+    /* erro: restaura o botao normal na hora */
+    if(btn){ btn.classList.remove('is-saving','is-saved'); btn.disabled=false; btn.innerHTML=_btnLabel; }
+    _toast('Erro: '+error.message,true); console.error(error); return;
+  }
 
+  /* SUCESSO: feedback verde bem visivel no proprio botao (✔ Salvo!) — paridade fibro */
+  if(btn){ btn.classList.remove('is-saving'); btn.classList.add('is-saved'); btn.disabled=true; btn.innerHTML='✔ Salvo com sucesso!'; }
   _toast(proj==='oculos'?'Pedido cadastrado com sucesso!':'Paciente cadastrado com sucesso!');
-  _stg=1;_dat={};
-  buildNovoForm(proj);
-  if(typeof loadData==='function') loadData();
+
+  /* Segura o "✔ Salvo!" visivel por ~0,9s, depois limpa o form e recarrega */
+  setTimeout(function(){
+    try {
+      _stg=1; _dat={};
+      buildNovoForm(proj);
+      if(typeof loadData==='function') loadData();
+    } catch(e){ console.warn('[malaquias:pos-save-reset]', e?.message||e); }
+  }, 900);
 };
 
 /* ---- Cor do slider de dor ---- */
@@ -7132,29 +7146,12 @@ function _updateRecordsCard(){
 let _rtFibro=null, _rtOculos=null;
 
 function _initGlobalRealtime(){
-  /* Subscreve AMBAS as tabelas simultaneamente — não desconecta ao trocar seção */
-  if(!_rtFibro){
-    _rtFibro=sb.channel('global_rt_fibro')
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'pacientes_fibro'},pl=>{
-        const rec=pl.new;
-        if(_proj()==='fibro'){
-          if(!Array.isArray(window.allPacientes))window.allPacientes=[];
-          window.allPacientes.unshift(rec);
-        }
-        _onNewRecord(rec,'fibro');
-      }).subscribe();
-  }
-  if(!_rtOculos){
-    _rtOculos=sb.channel('global_rt_oculos')
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'pacientes_oculos'},pl=>{
-        const rec=pl.new;
-        if(_proj()==='oculos'){
-          if(!Array.isArray(window.allPacientes))window.allPacientes=[];
-          window.allPacientes.unshift(rec);
-        }
-        _onNewRecord(rec,'oculos');
-      }).subscribe();
-  }
+  /* DESATIVADO (2026-06-03, paridade fibro) — canais 'global_rt_*' eram redundantes
+     com 'oculos-changes' e disparavam _onNewRecord, que rodava updateKPIs+updateTable+
+     updateCharts SEM throttle/gate a cada insert + unshift SEM dedup (contava 2x).
+     'oculos-changes' ja cobre o realtime do admin (via _natReloadDebounced) e os feed
+     widgets. Mantemos a funcao (chamada em _ffInit) como no-op. */
+  return;
 }
 
 async function _onNewRecord(rec,proj){
@@ -10159,7 +10156,8 @@ function _rtInit(){
       const pr=window._profilesMap?.[p.cadastrado_por];
       const cadPor=pr?(pr.nome_ponto||pr.nome||'Colaborador'):'Colaborador';
       _rtToast(nome,'Óculos',cadPor);
-      if(typeof window.loadData==='function') setTimeout(()=>window.loadData(),1000);
+      /* loadData() removido (paridade fibro): 'oculos-changes' ja recarrega via
+         _natReloadDebounced. Este canal e so pro toast bonito com nome do paciente. */
     })
     .subscribe();
   _rtChannels.push(ch);
