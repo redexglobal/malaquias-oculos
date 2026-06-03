@@ -2782,11 +2782,18 @@ window._dupConfirm = function(nome){
 window._todayBR = function(){
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
 };
+/* PERF (#1, paridade fibro): memoiza a conversao de timezone por timestamp.
+   criado_em e imutavel por registro, entao cachear evita re-converter
+   (toLocaleDateString com timeZone) a cada filtro/grafico. Mesma saida. */
+window._dateBRCache = new Map();
 window._dateBR = function(iso){
   if(!iso) return '';
+  const cached = window._dateBRCache.get(iso);
+  if(cached !== undefined) return cached;
   const d = new Date(iso);
-  if(isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const r = isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  window._dateBRCache.set(iso, r);
+  return r;
 };
 window._matchDayBR = function(iso, prefix){
   if(!iso || !prefix) return false;
