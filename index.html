@@ -4817,10 +4817,6 @@ function _buildStg1() {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Seção Eleitoral</label>
-          <input type="text" class="form-input" id="s1-secao" placeholder="Ex: 0123 / Zona 001">
-        </div>
-        <div class="form-group">
           <label class="form-label">Adultos no lar</label>
           <input type="number" class="form-input" id="s1-adultos" placeholder="Ex: 3" min="0" max="20">
         </div>
@@ -5183,7 +5179,6 @@ function _stgCollect(s) {
     _dat.idade=parseInt(document.getElementById('s1-idade')?.value)||null;
     _dat.nome_mae=document.getElementById('s1-mae')?.value.trim()||null;
     _dat.nome_pai=document.getElementById('s1-pai')?.value.trim()||null;
-    _dat.secao_eleitoral=document.getElementById('s1-secao')?.value.trim()||null;
     const _ad=parseInt(document.getElementById('s1-adultos')?.value);
     _dat.adultos_no_lar=isNaN(_ad)?null:_ad;
     _dat.estado_civil=document.getElementById('s1-estciv')?.value||null;
@@ -5276,7 +5271,6 @@ window._stgSave = async function() {
     cpf:_dat.cpf||null,
     nome_mae:_dat.nome_mae||null,
     nome_pai:_dat.nome_pai||null,
-    secao_eleitoral:_dat.secao_eleitoral||null,
     adultos_no_lar:_dat.adultos_no_lar!=null?_dat.adultos_no_lar:null,
     estado_civil:_dat.estado_civil||null,
     cidade:_dat.cidade||null,
@@ -5316,8 +5310,8 @@ window._stgSave = async function() {
 
   /* Remove campos com coluna potencialmente faltando — tenta inserir, se falhar remove e tenta sem */
   const newCols = proj==='fibro'
-    ? ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
-    : ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
+    ? ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
+    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
 
   let {error} = await sb.from(table).insert(payload);
 
@@ -10058,7 +10052,6 @@ window._abrirFichaPaciente = function(pid) {
   corpo += row('WhatsApp', p.whatsapp);
   corpo += row('Nome da mãe', p.nome_mae);
   corpo += row('Nome do pai', p.nome_pai);
-  corpo += row('Seção eleitoral', p.secao_eleitoral);
   corpo += row('Estado civil', p.estado_civil);
   corpo += row('Adultos no lar', p.adultos_no_lar);
   corpo += row('Cidade', p.cidade);
@@ -10351,7 +10344,6 @@ window._abrirHistoricoPaciente=function(key){
       ${row('WhatsApp',p.whatsapp)}
       ${row('Nome da mãe',p.nome_mae)}
       ${row('Nome do pai',p.nome_pai)}
-      ${row('Seção eleitoral',p.secao_eleitoral)}
       ${row('Estado civil',p.estado_civil)}
       ${row('Adultos no lar',p.adultos_no_lar)}
       ${row('Cidade',p.cidade)}
@@ -10684,7 +10676,6 @@ async function _salvarRetorno(key,btnRef){
     cpf: pBase.cpf||null,
     nome_mae: pBase.nome_mae||null,
     nome_pai: pBase.nome_pai||null,
-    secao_eleitoral: pBase.secao_eleitoral||null,
     adultos_no_lar: pBase.adultos_no_lar!=null?pBase.adultos_no_lar:null,
     estado_civil: pBase.estado_civil||null,
     cidade: pBase.cidade||null,
@@ -10729,8 +10720,8 @@ async function _salvarRetorno(key,btnRef){
 
   /* Graceful degradation: tenta com tudo, se coluna nova falhar, remove e tenta de novo */
   const newCols = proj==='fibro'
-    ? ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
-    : ['cpf','nome_mae','nome_pai','secao_eleitoral','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
+    ? ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
+    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
 
   let {error}=await sb.from(table).insert(payload);
   if(error && error.message && error.message.includes('column')){
@@ -10789,8 +10780,7 @@ window._pEditOpen=function(recordId){
       <div class="_ped-grupo"><label class="_ped-label">CPF</label><input type="text" id="_ped-cpf" class="_ped-input" value="${esc(rec.cpf)}"></div>
       <div class="_ped-grupo"><label class="_ped-label">Idade</label><input type="number" id="_ped-idade" class="_ped-input" value="${esc(rec.idade)}"></div>
     </div>
-    <div class="_ped-grupo"><label class="_ped-label">WhatsApp</label><input type="text" id="_ped-whats" class="_ped-input" value="${esc(rec.whatsapp)}"></div>
-    <div class="_ped-grupo"><label class="_ped-label">Seção Eleitoral</label><input type="text" id="_ped-secao" class="_ped-input" value="${esc(rec.secao_eleitoral)}"></div>`;
+    <div class="_ped-grupo"><label class="_ped-label">WhatsApp</label><input type="text" id="_ped-whats" class="_ped-input" value="${esc(rec.whatsapp)}"></div>`;
 
   const corpoFibro=`
     <div class="_ped-grupo"><label class="_ped-label">Sintomas</label><textarea id="_ped-sintomas" rows="2" class="_ped-input">${esc(rec.sintomas)}</textarea></div>
@@ -10911,7 +10901,6 @@ async function _pEditSave(recordId,btnRef){
     cpf: txt('_ped-cpf'),
     idade: parseInt(val('_ped-idade'))||null,
     whatsapp: txt('_ped-whats'),
-    secao_eleitoral: txt('_ped-secao'),
     precaucoes_clinicas: txt('_ped-precaucoes'),
     observacoes: txt('_ped-obs'),
     nivel_melhora: (function(){ const v=val('_ped-melhora'); return v===''||v==null?null:parseInt(v); })(),
