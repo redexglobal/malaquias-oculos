@@ -1103,6 +1103,12 @@ tr:last-child td { border-bottom: none; }
           <div class="kpi-value" id="kpi-dor">—</div>
           <div class="kpi-label">Pedidos Prontos</div>
         </div>
+        <div class="kpi-card" title="Média de idade dos seus pacientes">
+          <div class="kpi-header"><div class="kpi-icon"><i class="fas fa-user-clock"></i></div></div>
+          <div class="kpi-value" id="kpi-idade">—</div>
+          <div class="kpi-label">Idade Média</div>
+          <div class="kpi-cmp neutral" id="kpi-idade-sub"></div>
+        </div>
       </div>
 
       <div class="chart-grid">
@@ -1117,12 +1123,37 @@ tr:last-child td { border-bottom: none; }
           <div class="chart-container"><canvas id="chart-dor"></canvas></div>
         </div>
       </div>
+      <!-- 🏆 RANKING DE CADASTROS (largura total) — Geral | Semana/Mês -->
+      <div class="chart-card" style="margin-top:18px">
+        <div class="chart-title">🏆 Ranking de Cadastros por Ponto</div>
+        <div class="chart-subtitle">Posição de cada ponto · atualiza sozinho · o seu fica destacado</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Geral (total)</div>
+            <div id="rank-geral"></div>
+          </div>
+          <div>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+              <button class="rank-tab" data-p="semana" onclick="window._setRankPeriodo('semana',this)" style="background:rgba(0,200,83,0.18);color:var(--accent);border:1px solid var(--accent);border-radius:7px;padding:4px 12px;font-size:11px;font-weight:800;cursor:pointer;text-transform:uppercase">Semana</button>
+              <button class="rank-tab" data-p="mes" onclick="window._setRankPeriodo('mes',this)" style="background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border-glass);border-radius:7px;padding:4px 12px;font-size:11px;font-weight:800;cursor:pointer;text-transform:uppercase">Mês</button>
+            </div>
+            <div id="rank-periodo"></div>
+          </div>
+        </div>
+      </div>
       <div class="chart-grid" style="margin-top:18px">
         <div class="chart-card">
-          <div class="chart-title">Top 10 Pontos com mais Pedidos</div>
-          <div class="chart-subtitle">Ranking acumulado (view v_pontos_oculos)</div>
-          <div class="chart-container" style="height:360px"><canvas id="chart-top-pontos"></canvas></div>
+          <div class="chart-title">Faixa Etária dos Pacientes</div>
+          <div class="chart-subtitle">Distribuição por idade — só do seu ponto</div>
+          <div class="chart-container"><canvas id="chart-idade"></canvas></div>
         </div>
+        <div class="chart-card">
+          <div class="chart-title">Evolução dos Pacientes</div>
+          <div class="chart-subtitle">Melhorando · Estável · Piorando (feedback nos retornos)</div>
+          <div class="chart-container"><canvas id="chart-melhora"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-grid" style="margin-top:18px">
         <div class="chart-card">
           <div class="chart-title">Pedidos por Hora do Dia</div>
           <div class="chart-subtitle">Distribuição horária — últimos 30 dias</div>
@@ -2008,8 +2039,26 @@ function enterApp() {
   }
 
   const hora = new Date().getHours();
-  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-  document.getElementById('dash-title').textContent = saudacao + ', ' + (currentProfile?.nome?.split(' ')[0] || 'Usuário');
+  if(!window._setGreeting){
+    window._setGreeting=function(){
+      const _dt=document.getElementById('dash-title'); if(!_dt)return;
+      const h=new Date().getHours();
+      const s=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+      let nome=''; try{ nome=localStorage.getItem('mq_greet_name')||''; }catch(_){}
+      if(!nome) nome=(typeof currentProfile!=='undefined'&&currentProfile&&currentProfile.nome)?currentProfile.nome.split(' ')[0]:'Usuário';
+      _dt.innerHTML=s+', '+String(nome).replace(/</g,'&lt;')+' <button onclick="window._editGreetName()" title="Editar seu nome na saudação" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.55em;margin-left:8px;vertical-align:middle"><i class="fas fa-pen"></i></button>';
+    };
+    window._editGreetName=function(){
+      let atual=''; try{ atual=localStorage.getItem('mq_greet_name')||''; }catch(_){}
+      if(!atual) atual=(typeof currentProfile!=='undefined'&&currentProfile&&currentProfile.nome)?currentProfile.nome.split(' ')[0]:'';
+      const novo=prompt('Como você quer ser chamado(a) na saudação? (ex: Natália)', atual);
+      if(novo==null)return;
+      try{ localStorage.setItem('mq_greet_name',(novo||'').trim()); }catch(_){}
+      window._setGreeting();
+      if(typeof showToast==='function') showToast('Saudação atualizada! 👋');
+    };
+  }
+  window._setGreeting();
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const _fdata = document.getElementById('f-data');
   if (_fdata) _fdata.value = _todayBR();
@@ -2149,6 +2198,11 @@ function updateKPIs() {
   const dors = allPacientes.filter(p => p.nivel_dor).map(p => p.nivel_dor);
   const media = dors.length ? (dors.reduce((a,b) => a+b, 0) / dors.length).toFixed(1) : '—';
   document.getElementById('kpi-dor').textContent = media;
+  /* Idade média (dados do próprio ponto via RLS; recalcula a cada cadastro) */
+  const _ids = allPacientes.map(p=>parseInt(p.idade)).filter(n=>n>0&&n<120);
+  const _im = _ids.length ? Math.round(_ids.reduce((a,b)=>a+b,0)/_ids.length) : '—';
+  const _ki=document.getElementById('kpi-idade'); if(_ki)_ki.textContent=_im;
+  const _kis=document.getElementById('kpi-idade-sub'); if(_kis)_kis.textContent=_ids.length?('anos · '+_ids.length+' c/ idade'):'';
 }
 
 function updateTable() {
@@ -2282,8 +2336,22 @@ function updateCharts() {
     });
   }
 
-  /* G3 + G4 — novos charts */
-  if (typeof updateTopPontosChart === 'function') updateTopPontosChart(c);
+  /* G_idade — Faixa Etária (dados do ponto via RLS) */
+  const _faixas=[['0–20',0],['21–40',0],['41–60',0],['61–80',0],['81+',0]];
+  allPacientes.forEach(p=>{ const a=parseInt(p.idade); if(!(a>0&&a<120))return; const i=a<=20?0:a<=40?1:a<=60?2:a<=80?3:4; _faixas[i][1]++; });
+  if(charts.idade) charts.idade.destroy();
+  const ctxIdade=document.getElementById('chart-idade');
+  if(ctxIdade) charts.idade=new Chart(ctxIdade,{ type:'bar', data:{ labels:_faixas.map(f=>f[0]), datasets:[{ label:'Pacientes', data:_faixas.map(f=>f[1]), backgroundColor:c.accentBg, borderColor:c.accent, borderWidth:1, borderRadius:6 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.raw+' paciente'+(i.raw===1?'':'s')}}}, scales:{ y:{beginAtZero:true,grid:{color:c.grid},ticks:{stepSize:1}}, x:{grid:{display:false}} } } });
+
+  /* G_melhora — Evolução dos pacientes (melhorando/estável/piorando) */
+  let _melh=0,_estav=0,_pior=0;
+  allPacientes.forEach(p=>{ if(p.nivel_melhora==null||p.nivel_melhora==='')return; const v=parseInt(p.nivel_melhora); if(v>0)_melh++; else if(v<0)_pior++; else _estav++; });
+  if(charts.melhora) charts.melhora.destroy();
+  const ctxMelh=document.getElementById('chart-melhora');
+  if(ctxMelh) charts.melhora=new Chart(ctxMelh,{ type:'doughnut', data:{ labels:['Melhorando','Estável','Piorando'], datasets:[{ data:[_melh,_estav,_pior], backgroundColor:['#22c55e','#9ca3af','#ef4444'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right',labels:{boxWidth:12,padding:10,font:{size:12}}}} } });
+
+  /* G3 + G4 — ranking + hora */
+  if (typeof window._updateRanking === 'function') window._updateRanking();
   if (typeof updateHourlyChart === 'function') updateHourlyChart(c);
 
   // Analytics charts (admin only)
@@ -2328,6 +2396,45 @@ async function updateTopPontosChart(c) {
     });
   } catch (e) { console.error('[DASHBOARD G3 EXCEPTION]', e); }
 }
+
+/* 🏆 RANKING DE CADASTROS — agregado por ponto via RPC SECURITY DEFINER get_ranking_oculos
+   (colaborador vê o ranking de TODOS sem ver pacientes). Posição + nome, SEM quantidade. */
+let _rankPeriodo = 'semana';
+window._rankMedal = function(pos){ return pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':(pos+'º'); };
+window._renderRankCol = async function(elId, de, ate){
+  const el = document.getElementById(elId); if(!el) return;
+  const proj = (typeof currentProject!=='undefined' && currentProject==='oculos') ? 'oculos' : 'fibro';
+  try{
+    const { data, error } = await sb.rpc('get_ranking_'+proj, { p_de: de, p_ate: ate });
+    if(error){ el.innerHTML='<div style="padding:14px;color:var(--text-muted);font-size:12px">Ranking indisponível — rode <b>supabase/get_ranking.sql</b> no Supabase.</div>'; return; }
+    const rows = (data||[]).filter(r => (r.total||0) > 0);
+    const meu = (typeof currentProfile!=='undefined' && currentProfile) ? currentProfile.numero_ponto : null;
+    if(!rows.length){ el.innerHTML='<div style="padding:14px;color:var(--text-muted);font-size:12px">Sem cadastros nesse período.</div>'; return; }
+    el.innerHTML = rows.slice(0,15).map((r,i)=>{
+      const pos=i+1, ehMeu=(meu!=null && r.numero_ponto===meu);
+      const nome=String(r.nome_ponto||('Ponto '+r.numero_ponto)).replace(/</g,'&lt;');
+      return `<div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;margin-bottom:4px;${ehMeu?'background:rgba(0,200,83,0.14);border:1px solid var(--accent)':'background:rgba(255,255,255,0.02)'}">
+        <span style="font-size:14px;font-weight:800;min-width:30px;text-align:center;color:${pos<=3?'#eab308':'var(--text-muted)'}">${window._rankMedal(pos)}</span>
+        <span style="flex:1;font-size:12.5px;font-weight:${ehMeu?'800':'600'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}${ehMeu?' <span style="color:var(--accent);font-size:10px">(você)</span>':''}</span>
+      </div>`;
+    }).join('');
+  }catch(e){ console.warn('[ranking]', e?.message||e); el.innerHTML='<div style="padding:14px;color:var(--text-muted)">Erro ao carregar ranking.</div>'; }
+};
+window._updateRanking = function(){
+  const ate = new Date().toISOString().slice(0,10);
+  window._renderRankCol('rank-geral', '2020-01-01', ate);
+  const dias = _rankPeriodo==='mes' ? 30 : 7;
+  const de = new Date(Date.now()-dias*86400000).toISOString().slice(0,10);
+  window._renderRankCol('rank-periodo', de, ate);
+};
+window._setRankPeriodo = function(p, btn){
+  _rankPeriodo = p;
+  document.querySelectorAll('.rank-tab').forEach(b=>{ b.style.background='rgba(255,255,255,0.04)'; b.style.color='var(--text-muted)'; b.style.borderColor='var(--border-glass)'; });
+  if(btn){ btn.style.background='rgba(0,200,83,0.18)'; btn.style.color='var(--accent)'; btn.style.borderColor='var(--accent)'; }
+  const ate=new Date().toISOString().slice(0,10);
+  const de=new Date(Date.now()-(p==='mes'?30:7)*86400000).toISOString().slice(0,10);
+  window._renderRankCol('rank-periodo', de, ate);
+};
 
 /* G4 — Cadastros por hora do dia (barras verticais) */
 async function updateHourlyChart(c) {
@@ -4849,13 +4956,20 @@ function _buildStg1() {
       <div id="s1-dup-warn" style="display:none;margin-bottom:14px"></div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Idade</label>
+          <label class="form-label">Data de Nascimento</label>
+          <input type="date" class="form-input" id="s1-nascimento" onchange="window._calcIdadeDeNasc&&window._calcIdadeDeNasc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Idade <span style="color:var(--text-muted);font-size:11px;font-weight:400">(preenche pela data)</span></label>
           <input type="number" class="form-input" id="s1-idade" placeholder="Ex: 35" min="1" max="120" inputmode="numeric">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">CPF</label>
           <input type="text" class="form-input" id="s1-cpf" placeholder="000.000.000-00" maxlength="14" oninput="_maskCPF(this);window._checkDupWhileTyping&&window._checkDupWhileTyping()" inputmode="numeric" autocomplete="off">
         </div>
+        <div class="form-group"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -5234,6 +5348,7 @@ function _stgCollect(s) {
     _dat.cpf=document.getElementById('s1-cpf')?.value.trim()||null;
     _dat.whatsapp=document.getElementById('s1-whats')?.value.trim()||null;
     _dat.idade=parseInt(document.getElementById('s1-idade')?.value)||null;
+    _dat.data_nascimento=document.getElementById('s1-nascimento')?.value||null;
     _dat.nome_mae=document.getElementById('s1-mae')?.value.trim()||null;
     _dat.nome_pai=document.getElementById('s1-pai')?.value.trim()||null;
     const _ad=parseInt(document.getElementById('s1-adultos')?.value);
@@ -5334,6 +5449,7 @@ window._stgSave = async function() {
     origem:_dat.origem||null,
     whatsapp:_dat.whatsapp||null,
     idade:_dat.idade||null,
+    data_nascimento:_dat.data_nascimento||null,
     precaucoes_clinicas:document.getElementById('s4-precaucoes')?.value.trim()||null,
     observacoes:document.getElementById('s4-obs')?.value.trim()||null,
     nivel_melhora:(()=>{const v=document.getElementById('s4-melhora')?.value;return v===''||v==null?null:parseInt(v);})(),
@@ -5368,7 +5484,7 @@ window._stgSave = async function() {
   /* Remove campos com coluna potencialmente faltando — tenta inserir, se falhar remove e tenta sem */
   const newCols = proj==='fibro'
     ? ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
-    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
+    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido','data_nascimento'];
 
   let {error} = await sb.from(table).insert(payload);
 
@@ -5406,6 +5522,15 @@ window._stgSave = async function() {
 };
 
 /* ---- Cor do slider de dor ---- */
+/* Calcula a idade a partir da Data de Nascimento (preenche o campo Idade sozinho). */
+window._calcIdadeDeNasc = function(){
+  const n=document.getElementById('s1-nascimento')?.value; if(!n||n.length!==10)return;
+  const y=parseInt(n.slice(0,4)); if(!(y>=1900&&y<=2026))return;
+  const hoje=new Date(); let idade=hoje.getFullYear()-y;
+  const mm=(hoje.getMonth()+1)-parseInt(n.slice(5,7)); const dd=hoje.getDate()-parseInt(n.slice(8,10));
+  if(mm<0||(mm===0&&dd<0)) idade--;
+  const el=document.getElementById('s1-idade'); if(el && idade>0 && idade<120) el.value=idade;
+};
 window._dorColor = function(v) {
   v=parseInt(v);
   const el=document.getElementById('s3-dor-display');
@@ -7685,6 +7810,10 @@ if (!document.getElementById('pfd-keyframes')) {
         <input type="text" class="form-input" id="em-nome" placeholder="Nome completo">
       </div>
       <div>
+        <label class="edit-label">Data de Nascimento</label>
+        <input type="date" class="form-input" id="em-nascimento">
+      </div>
+      <div>
         <label class="edit-label">Idade</label>
         <input type="number" class="form-input" id="em-idade" placeholder="Ex: 35">
       </div>
@@ -7903,6 +8032,7 @@ window._emOpen = function(id) {
   $('em-id').value = id;
   $('em-nome').value = rec.nome||'';
   $('em-idade').value = rec.idade||'';
+  if($('em-nascimento')) $('em-nascimento').value = rec.data_nascimento||'';
   $('em-whats').value = rec.whatsapp||'';
   $('em-obs').value = rec.observacoes||'';
 
@@ -7933,6 +8063,7 @@ window._emSave = async function() {
   const payload = {
     nome:    $('em-nome')?.value.trim()||null,
     idade:   parseInt($('em-idade')?.value)||null,
+    data_nascimento: $('em-nascimento')?.value||null,
     whatsapp:$('em-whats')?.value.trim()||null,
     observacoes:$('em-obs')?.value.trim()||null,
   };
@@ -10105,6 +10236,7 @@ window._abrirFichaPaciente = function(pid) {
   let corpo = sec('Identificação');
   corpo += row('Nome completo', p.nome);
   corpo += row('CPF', p.cpf);
+  corpo += row('Data de nascimento', p.data_nascimento ? new Date(p.data_nascimento+'T12:00:00').toLocaleDateString('pt-BR') : null);
   corpo += row('Idade', p.idade ? p.idade+' anos' : null);
   corpo += row('WhatsApp', p.whatsapp);
   corpo += row('Nome da mãe', p.nome_mae);
@@ -10397,6 +10529,7 @@ window._abrirHistoricoPaciente=function(key){
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent,#00e676);font-weight:700;margin-bottom:8px">Identificação</div>
       ${row('Nome',p.nome)}
       ${row('CPF',p.cpf)}
+      ${row('Data de nascimento',p.data_nascimento?new Date(p.data_nascimento+'T12:00:00').toLocaleDateString('pt-BR'):null)}
       ${row('Idade',p.idade?p.idade+' anos':null)}
       ${row('WhatsApp',p.whatsapp)}
       ${row('Nome da mãe',p.nome_mae)}
@@ -10739,6 +10872,7 @@ async function _salvarRetorno(key,btnRef){
     origem: pBase.origem||null,
     whatsapp: pBase.whatsapp||null,
     idade: pBase.idade||null,
+    data_nascimento: pBase.data_nascimento||null,
     cadastrado_por: typeof currentUser!=='undefined'?currentUser.id:null,
     precaucoes_clinicas: document.getElementById('_pret-precaucoes')?.value.trim()||null,
     observacoes: document.getElementById('_pret-obs')?.value.trim()||null,
@@ -10778,7 +10912,7 @@ async function _salvarRetorno(key,btnRef){
   /* Graceful degradation: tenta com tudo, se coluna nova falhar, remove e tenta de novo */
   const newCols = proj==='fibro'
     ? ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','tempo_sintomas','medicacoes','pontos_dor','proximo_retorno']
-    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido'];
+    : ['cpf','nome_mae','nome_pai','adultos_no_lar','estado_civil','cidade','origem','nivel_melhora','precaucoes_clinicas','adicao','nome_medico','tipo_lente','tratamentos_lente','valor_pedido','data_nascimento'];
 
   let {error}=await sb.from(table).insert(payload);
   if(error && error.message && error.message.includes('column')){
@@ -10835,6 +10969,7 @@ window._pEditOpen=function(recordId){
     <div class="_ped-grupo"><label class="_ped-label">Nome</label><input type="text" id="_ped-nome" class="_ped-input" value="${esc(rec.nome)}"></div>
     <div class="_ped-row">
       <div class="_ped-grupo"><label class="_ped-label">CPF</label><input type="text" id="_ped-cpf" class="_ped-input" value="${esc(rec.cpf)}"></div>
+      <div class="_ped-grupo"><label class="_ped-label">Data de nascimento</label><input type="date" id="_ped-nascimento" class="_ped-input" value="${esc(rec.data_nascimento)}"></div>
       <div class="_ped-grupo"><label class="_ped-label">Idade</label><input type="number" id="_ped-idade" class="_ped-input" value="${esc(rec.idade)}"></div>
     </div>
     <div class="_ped-grupo"><label class="_ped-label">WhatsApp</label><input type="text" id="_ped-whats" class="_ped-input" value="${esc(rec.whatsapp)}"></div>`;
@@ -10957,6 +11092,7 @@ async function _pEditSave(recordId,btnRef){
     nome: txt('_ped-nome'),
     cpf: txt('_ped-cpf'),
     idade: parseInt(val('_ped-idade'))||null,
+    data_nascimento: val('_ped-nascimento')||null,
     whatsapp: txt('_ped-whats'),
     precaucoes_clinicas: txt('_ped-precaucoes'),
     observacoes: txt('_ped-obs'),
