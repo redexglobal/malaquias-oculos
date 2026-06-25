@@ -10470,6 +10470,15 @@ function _puAgrupar(){
 window._renderPacientesUnicos=function(){
   const body=document.getElementById('pu-body');
   if(!body) return;
+  /* Delegação de clique UMA vez — funciona pras linhas anexadas no scroll infinito
+     (antes religava listener por linha, o que não pegava linhas adicionadas depois). */
+  if(!body._puClickHooked){
+    body._puClickHooked=true;
+    body.addEventListener('click', e=>{
+      const tr=e.target.closest('tr[data-pac-key]');
+      if(tr && typeof window._abrirHistoricoPaciente==='function') window._abrirHistoricoPaciente(tr.dataset.pacKey||'');
+    });
+  }
   /* Busca SEM ACENTO + por PALAVRAS/TOKENS (fix 2026-06-25, paridade com fibro):
      digitar "ivonete santos" acha "IVONETE RIBEIRO DOS SANTOS" (todas as palavras,
      qualquer ordem) e "jose" acha "JOSÉ" (sem acento). Antes exigia substring
@@ -10498,12 +10507,14 @@ window._renderPacientesUnicos=function(){
   const title=document.getElementById('pu-title');
   if(title) title.textContent=filtered.length+' pacientes únicos';
 
-  body.innerHTML=filtered.slice(0,3000).map(g=>{ /* 2026-06-25: era 800; paridade c/ fibro p/ não cortar lista em volume alto */
+  /* LISTA ILIMITADA (2026-06-25): sem teto de exibição; scroll infinito desenha sob demanda. */
+  const show=filtered;
+  const row=g=>{
     const p=g.paciente;
     const cpfShow=p.cpf||(g.visitas.find(v=>v.cpf)||{}).cpf||'';
     const ultima=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'—';
     const nv=g.visitas.length;
-    /* XSS safe: dados escapados pra innerHTML, key tirado de dentro do onclick via data-pac-key */
+    /* XSS safe: dados escapados pra innerHTML, key via data-pac-key (clique por delegação) */
     return `<tr style="cursor:pointer" data-pac-key="${_escHtml(g.key)}" title="Clique para ver histórico de pedidos">
       <td style="font-weight:500;color:var(--text-primary)">${_escHtml(p.nome||'—')}</td>
       <td>${cpfShow?_escHtml(cpfShow):'<span style="color:var(--text-muted);font-size:11px">(sem CPF)</span>'}</td>
@@ -10512,14 +10523,40 @@ window._renderPacientesUnicos=function(){
       <td><span style="background:rgba(0,200,83,0.15);color:var(--accent);padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">${nv} ${nv===1?'pedido':'pedidos'}</span></td>
       <td>${_escHtml(ultima)}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum paciente encontrado</td></tr>';
-  /* Listeners post-render: tirei o onclick inline pra evitar problemas se a key tiver caracter especial */
-  body.querySelectorAll('tr[data-pac-key]').forEach(tr => {
-    tr.addEventListener('click', () => {
-      const key = tr.dataset.pacKey || '';
-      if (typeof window._abrirHistoricoPaciente === 'function') window._abrirHistoricoPaciente(key);
-    });
-  });
+  };
+  if(!show.length){ body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum paciente encontrado</td></tr>'; return; }
+  /* Render SOB DEMANDA (scroll infinito), igual ao fibro: pinta o 1º bloco e anexa
+     o resto conforme rola (IntersectionObserver); fallback no idle pra browser antigo. */
+  const FIRST=200, STEP=300;
+  const _puRenderToken=(body._puToken=(body._puToken||0)+1);
+  if(body._puObs){ try{ body._puObs.disconnect(); }catch(_){} body._puObs=null; }
+  body.innerHTML=show.slice(0,FIRST).map(row).join('');
+  let i=FIRST;
+  if(i<show.length){
+    const IO=window.IntersectionObserver;
+    const appendNext=()=>{
+      if(body._puToken!==_puRenderToken || i>=show.length) return false;
+      body.insertAdjacentHTML('beforeend', show.slice(i,i+STEP).map(row).join(''));
+      i+=STEP;
+      return true;
+    };
+    if(IO){
+      const observeTail=()=>{
+        if(body._puObs){ try{ body._puObs.disconnect(); }catch(_){} body._puObs=null; }
+        if(body._puToken!==_puRenderToken || i>=show.length) return;
+        const linhas=body.querySelectorAll('tr[data-pac-key]');
+        const alvo=linhas[Math.max(0, linhas.length-15)];
+        if(!alvo) return;
+        body._puObs=new IO(ents=>{ if(ents.some(e=>e.isIntersecting)){ if(appendNext()) observeTail(); } }, {rootMargin:'600px 0px'});
+        body._puObs.observe(alvo);
+      };
+      observeTail();
+    } else {
+      const idle=window.requestIdleCallback||(f=>setTimeout(f,30));
+      const step=()=>{ if(appendNext()) idle(step); };
+      idle(step);
+    }
+  }
 };
 
 window._abrirHistoricoPaciente=function(key){

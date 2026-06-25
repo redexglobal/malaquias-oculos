@@ -5,7 +5,7 @@
    - CDN/estaticos: cache-first
    - skipWaiting + clients.claim
    ============================================================ */
-const CACHE_VERSION = 'mlq-oculos-v3';
+const CACHE_VERSION = 'mlq-oculos-v4';
 const SHELL_URL = '/';
 
 self.addEventListener('install', (event) => {
