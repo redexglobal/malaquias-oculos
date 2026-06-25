@@ -10498,7 +10498,7 @@ window._renderPacientesUnicos=function(){
   const title=document.getElementById('pu-title');
   if(title) title.textContent=filtered.length+' pacientes únicos';
 
-  body.innerHTML=filtered.slice(0,800).map(g=>{
+  body.innerHTML=filtered.slice(0,3000).map(g=>{ /* 2026-06-25: era 800; paridade c/ fibro p/ não cortar lista em volume alto */
     const p=g.paciente;
     const cpfShow=p.cpf||(g.visitas.find(v=>v.cpf)||{}).cpf||'';
     const ultima=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'—';
