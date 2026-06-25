@@ -5516,7 +5516,14 @@ window._stgSave = async function() {
     try {
       _stg=1; _dat={};
       buildNovoForm(proj);
-      if(typeof loadData==='function') loadData();
+      if(typeof loadData==='function'){
+        const _r=loadData();
+        /* Garante que o RECEM-CADASTRADO ja apareca na aba Pacientes na hora
+           (fix 2026-06-25, paridade fibro): re-renderiza a lista de unicos depois
+           que o loadData traz o dado fresco do servidor. */
+        const _refresh=()=>{ if(typeof window._renderPacientesUnicos==='function'){ try{ window._renderPacientesUnicos(); }catch(_){} } };
+        if(_r && typeof _r.then==='function') _r.then(_refresh); else _refresh();
+      }
     } catch(e){ console.warn('[malaquias:pos-save-reset]', e?.message||e); }
   }, 900);
 };
@@ -10463,13 +10470,24 @@ function _puAgrupar(){
 window._renderPacientesUnicos=function(){
   const body=document.getElementById('pu-body');
   if(!body) return;
-  const q=(document.getElementById('pu-search')?.value||'').toLowerCase().trim();
-  const qDigits=q.replace(/\D/g,'');
+  /* Busca SEM ACENTO + por PALAVRAS/TOKENS (fix 2026-06-25, paridade com fibro):
+     digitar "ivonete santos" acha "IVONETE RIBEIRO DOS SANTOS" (todas as palavras,
+     qualquer ordem) e "jose" acha "JOSÉ" (sem acento). Antes exigia substring
+     grudada e era sensível a acento — escondia a maioria dos pacientes. */
+  const _rawq=(document.getElementById('pu-search')?.value||'').trim();
+  const _nrm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+  const q=_nrm(_rawq);
+  const qDigits=_rawq.replace(/\D/g,'');
+  const qTokens=q.split(' ').filter(Boolean);
+  const _grpNomeMatch=g=>{
+    const cands=[g.paciente.nome, ...g.visitas.map(v=>v.nome)];
+    return cands.some(nm=>{ const n=_nrm(nm); return qTokens.every(t=>n.includes(t)); });
+  };
   const dataF=document.getElementById('pu-search-data')?.value||'';
   const groups=_puAgrupar();
   let filtered=q
     ? groups.filter(g=>
-        (g.paciente.nome||'').toLowerCase().includes(q)||
+        (qTokens.length && _grpNomeMatch(g))||
         (qDigits && g.visitas.some(v=>(v.cpf||'').replace(/\D/g,'').includes(qDigits)))||
         (qDigits && g.visitas.some(v=>(v.whatsapp||'').replace(/\D/g,'').includes(qDigits)))
       )
