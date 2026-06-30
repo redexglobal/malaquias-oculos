@@ -4981,7 +4981,7 @@ function _buildStg1() {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Data de Nascimento</label>
-          <input type="date" class="form-input" id="s1-nascimento" onchange="window._calcIdadeDeNasc&&window._calcIdadeDeNasc()">
+          <input type="date" class="form-input" id="s1-nascimento" oninput="window._calcIdadeDeNasc&&window._calcIdadeDeNasc()" onchange="window._calcIdadeDeNasc&&window._calcIdadeDeNasc()">
         </div>
         <div class="form-group">
           <label class="form-label">Idade <span style="color:var(--text-muted);font-size:11px;font-weight:400">(preenche pela data)</span></label>
@@ -5567,7 +5567,7 @@ window._stgSave = async function() {
 /* Calcula a idade a partir da Data de Nascimento (preenche o campo Idade sozinho). */
 window._calcIdadeDeNasc = function(){
   const n=document.getElementById('s1-nascimento')?.value; if(!n||n.length!==10)return;
-  const y=parseInt(n.slice(0,4)); if(!(y>=1900&&y<=2026))return;
+  const y=parseInt(n.slice(0,4)); if(!(y>=1900&&y<=new Date().getFullYear()))return;
   const hoje=new Date(); let idade=hoje.getFullYear()-y;
   const mm=(hoje.getMonth()+1)-parseInt(n.slice(5,7)); const dd=hoje.getDate()-parseInt(n.slice(8,10));
   if(mm<0||(mm===0&&dd<0)) idade--;
@@ -12859,6 +12859,41 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(e){ console.warn('[sw] registro falhou:', e && e.message); });
   });
 }
+</script>
+
+<script>
+/* ============================================================
+   BATIDA DE SEGURANÇA DOS CONTADORES (paridade fibro 2026-06-30) — garante o
+   "Total de Pacientes" (únicos) atualizado em tempo real em TODOS os painéis
+   (admin + colaborador), mesmo se o websocket do realtime cair ou um repaint
+   for pulado. A cada 15s (só aba visível): (1) recomputa os KPIs do array LOCAL
+   — auto-cura o display sem rede; (2) consulta LEVE (count, head:true) e, se o
+   servidor divergir do carregado, faz 1 loadData pra re-sincronizar tudo.
+   100% aditivo. ============================================================ */
+(function(){
+'use strict';
+window._kpiHeartbeat = async function(){
+  if (document.hidden) return;
+  if (typeof currentProfile === 'undefined' || !currentProfile) return;
+  const _papel = currentProfile.papel;
+  if (_papel !== 'admin' && _papel !== 'colaborador') return;
+  /* auto-cura do display: recomputa do array local toda batida (barato, sem rede;
+     o textContent só muda se o número mudou → sem flicker). */
+  try { if (typeof updateKPIs === 'function') updateKPIs(); } catch(_){}
+  try {
+    const tbl = (typeof currentProject!=='undefined' && currentProject==='fibro') ? 'pacientes_fibro' : 'pacientes_oculos';
+    const { count } = await sb.from(tbl).select('id', { count:'exact', head:true });
+    if (typeof count !== 'number') return;
+    const local = Array.isArray(window.allPacientes) ? window.allPacientes.length : 0;
+    if (count !== local && typeof loadData === 'function') {
+      await loadData();
+      if (typeof updateKPIs === 'function') { try { updateKPIs(); } catch(_){} }
+      if (typeof window._renderPacientesUnicos === 'function') { try { window._renderPacientesUnicos(); } catch(_){} }
+    }
+  } catch(e){ /* silencioso: é só uma rede de segurança */ }
+};
+setInterval(function(){ try{ window._kpiHeartbeat(); }catch(e){} }, 15000);
+})();
 </script>
 </body>
 </html>
